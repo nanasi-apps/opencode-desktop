@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-24-npm-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-24-npm-cache-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: |
+          if npm run | grep -q '"lint"'; then
+            npm run lint
+          else
+            echo "No npm script 'lint' found. Running eslint directly."
+            npx eslint .
+          fi
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-24-npm-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-24-npm-cache-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run format check
+        run: |
+          if npm run | grep -q '"format"'; then
+            npm run format
+          else
+            echo "No npm script 'format' found. Running prettier directly."
+            npx prettier --check .
+          fi
+
+  build:
+    needs: [lint, format]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-24-npm-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-24-npm-cache-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: |
+          if npm run | grep -q '"build"'; then
+            npm run build
+          else
+            echo "No npm script 'build' found. Skipping build check."
+          fi

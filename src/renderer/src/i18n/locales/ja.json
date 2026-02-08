@@ -1,0 +1,451 @@
+{
+  "common": {
+    "unset": "(未設定)",
+    "oneValuePerLine": "1行に1つの値",
+    "keyValuePerLine": "key=value (1行に1つ)",
+    "emptyObject": "{}",
+    "permission": {
+      "default": "デフォルト",
+      "ask": "確認",
+      "allow": "許可",
+      "deny": "拒否"
+    }
+  },
+  "bootstrap": {
+    "title": "OpenCode",
+    "subtitle": "環境を確認しています..."
+  },
+  "install": {
+    "title": "OpenCode セットアップ",
+    "subtitle": "インストールモードを選択してください",
+    "back": "戻る",
+    "retry": "再試行",
+    "startInstallation": "インストール開始",
+    "mode": {
+      "auto": {
+        "title": "自動インストール",
+        "subtitle": "必要な項目だけ選んですばやくインストール",
+        "featureHomebrew": "Homebrew で OpenCode をインストール",
+        "featureOmoDefaults": "npx が使えれば npx、使えなければ Bun を Homebrew で導入",
+        "featureNoConfig": "質問は任意機能のみ"
+      },
+      "advanced": {
+        "title": "詳細インストール",
+        "subtitle": "細かくカスタムしてインストール",
+        "featurePackageManager": "パッケージマネージャーを選択 (Brew/npm)",
+        "featureSubscriptions": "AI プロバイダー契約を設定",
+        "featureCustomization": "すべての設定をカスタマイズ"
+      }
+    },
+    "advanced": {
+      "title": "詳細設定",
+      "packageManager": "パッケージマネージャー",
+      "homebrewRecommended": "Homebrew (推奨)",
+      "npm": "npm",
+      "claudeSubscription": "Claude サブスクリプション",
+      "noSubscription": "契約なし",
+      "proMaxSubscription": "Pro/Max 契約",
+      "max20": "Max20 (20x モード)",
+      "warningNoClaudeSubscription": "警告: Claude 契約がない場合、Sisyphus エージェントが最適に動作しない可能性があります。",
+      "otherAiProviders": "その他の AI プロバイダー",
+      "googleGemini": "Google Gemini",
+      "openCodeZen": "OpenCode Zen",
+      "zaiCodingPlan": "Z.ai Coding Plan"
+    },
+    "auto": {
+      "title": "自動インストール設定",
+      "optionalFeatures": "任意機能"
+    },
+    "steps": {
+      "homebrew": "Homebrew",
+      "openCode": "OpenCode",
+      "ohMyOpenCode": "Oh My OpenCode"
+    },
+    "progress": {
+      "overall": "全体進捗: {percent}%",
+      "currentStep": "現在の処理: {step}",
+      "liveOutput": "実行ログ",
+      "downloadProgress": "ダウンロード進捗: {percent}%",
+      "waitingForOutput": "コマンド出力を待機中..."
+    },
+    "status": {
+      "waiting": "待機中",
+      "checking": "確認中",
+      "installing": "インストール中...",
+      "installed": "インストール済み",
+      "failed": "失敗"
+    },
+    "complete": {
+      "title": "インストール完了!",
+      "subtitle": "OpenCode を使用できます。",
+      "autoLaunchQuestion": "OpenCode Web を自動起動しますか？",
+      "autoLaunchYes": "はい、自動で起動する",
+      "autoLaunchNo": "いいえ、必要なときに手動で起動する",
+      "startUsing": "OpenCode を使い始める"
+    },
+    "errors": {
+      "homebrewFailed": "Homebrew のインストールに失敗しました: {output}",
+      "openCodeFailed": "OpenCode のインストールに失敗しました: {output}",
+      "ohMyOpenCodeFailed": "Oh My OpenCode のインストールに失敗しました: {output}"
+    }
+  },
+  "setup": {
+    "title": "OpenCode セットアップ",
+    "subtitle": "環境を準備しています...",
+    "openCodeWeb": "OpenCode Web",
+    "retry": "再試行",
+    "status": {
+      "starting": "起動中...",
+      "runningOnPort": "ポート {port} で実行中",
+      "failedToStart": "起動に失敗"
+    },
+    "errors": {
+      "failedToStartWeb": "OpenCode Web の起動に失敗しました。アプリを再起動して再度お試しください。"
+    }
+  },
+  "main": {
+    "connectionLost": "接続が失われました",
+    "reload": "再読み込み",
+    "restartSetup": "セットアップをやり直す",
+    "settings": "設定",
+    "manualStart": {
+      "title": "OpenCode Web は手動起動に設定されています",
+      "subtitle": "Web UI を開くときに起動してください。",
+      "startButton": "OpenCode Web を起動"
+    },
+    "tunnel": {
+      "starting": "トンネル起動中...",
+      "active": "トンネル有効: {url}",
+      "error": "トンネルエラー: {error}",
+      "unknownError": "不明なエラー"
+    },
+    "errors": {
+      "failedToLoadWeb": "OpenCode Web の読み込みに失敗しました ({error})",
+      "webProcessCrashed": "OpenCode Web プロセスがクラッシュしました。",
+      "webProcessExitedUnexpectedly": "opencode web プロセスが予期せず終了しました。",
+      "tunnelProcessExitedUnexpectedly": "トンネルプロセスが予期せず終了しました"
+    }
+  },
+  "settings": {
+    "back": "戻る",
+    "title": "設定",
+    "saving": "保存中...",
+    "save": "保存",
+    "loadingConfiguration": "設定を読み込み中...",
+    "groups": {
+      "opencodeSettings": "OpenCode 設定",
+      "wrapperSettings": "Wrapper 設定",
+      "ohMyOpenCodeSettings": "Oh My OpenCode 設定"
+    },
+    "sections": {
+      "general": "General",
+      "providers": "Providers",
+      "mcpServers": "MCP Servers",
+      "agents": "Agents",
+      "permissions": "Permissions",
+      "server": "Server",
+      "compaction": "Compaction",
+      "experimental": "Experimental",
+      "web": "Web",
+      "cloudflareTunnel": "Cloudflare Tunnel",
+      "categories": "Categories",
+      "claudeCode": "Claude Code",
+      "sisyphusAgent": "Sisyphus Agent",
+      "commentChecker": "Comment Checker",
+      "autoUpdate": "Auto Update",
+      "skills": "Skills",
+      "ralphLoop": "Ralph Loop",
+      "backgroundTask": "Background Task",
+      "notification": "Notification",
+      "gitMaster": "Git Master",
+      "disabled": "Disabled"
+    },
+    "messages": {
+      "saved": "保存しました",
+      "saveFailed": "保存に失敗しました",
+      "cloudflaredInstalled": "cloudflared をインストールしました",
+      "failedToInstallCloudflared": "cloudflared のインストールに失敗しました",
+      "tunnelStartFailed": "トンネル起動に失敗しました",
+      "webSettingsSaveFailed": "Web 設定の保存に失敗しました",
+      "savedWithWeb": "保存しました (web: {web})",
+      "savedWithTunnel": "保存しました (tunnel: {tunnel})",
+      "savedWithWebAndTunnel": "保存しました (web: {web}, tunnel: {tunnel})",
+      "failedToLoadConfig": "設定の読み込みに失敗しました",
+      "failedToLoadWrapperSettings": "Wrapper 設定の読み込みに失敗しました",
+      "failedToLoadOmoConfig": "OMO 設定の読み込みに失敗しました"
+    }
+  },
+  "general": {
+    "theme": {
+      "label": "Theme",
+      "placeholder": "例: catppuccin",
+      "description": "CLI と UI で使用するテーマプリセットです。"
+    },
+    "defaultModel": {
+      "label": "Default Model",
+      "placeholder": "例: claude-sonnet-4-20250514",
+      "description": "通常のコーディング/推論タスクで使うメインモデルです。"
+    },
+    "smallModel": {
+      "label": "Small Model",
+      "placeholder": "例: claude-haiku-4-20250514",
+      "description": "軽量タスク向けの低コストモデルです。"
+    },
+    "defaultAgent": {
+      "label": "Default Agent",
+      "placeholder": "例: general",
+      "description": "エージェント未指定時に使われる既定プロファイルです。"
+    },
+    "username": {
+      "label": "Username",
+      "placeholder": "あなたの名前",
+      "description": "ユーザー名が必要な場面で表示される名前です。"
+    },
+    "logLevel": {
+      "label": "Log Level",
+      "description": "ログの詳細度を制御します。高いレベルほど診断情報が増えます。"
+    }
+  },
+  "provider": {
+    "apiKey": {
+      "label": "API Key",
+      "help": "プロバイダー認証トークンです。認証不要のプロバイダー以外は空にしないでください。"
+    },
+    "baseUrl": {
+      "label": "Base URL",
+      "help": "このプロバイダー用のカスタム API エンドポイントです。プロキシ/ゲートウェイ/セルフホスト互換サービス経由で使う場合に設定します。"
+    },
+    "models": {
+      "label": "Models (one per line)",
+      "help": "このプロバイダーで利用可能なモデル ID。1行に1つ入力してください。"
+    },
+    "add": {
+      "placeholder": "provider name",
+      "button": "Add Provider"
+    }
+  },
+  "mcp": {
+    "enabled": {
+      "label": "Enabled",
+      "help": "設定を削除せずにこの MCP サーバーを有効/無効にします。"
+    },
+    "type": {
+      "label": "Type",
+      "help": "`local` はこのマシン上でコマンドを起動します。`remote` は HTTP(S) 経由で MCP サーバーに接続します。"
+    },
+    "command": {
+      "label": "Command (1行1要素)",
+      "help": "ローカル MCP サーバー起動時のコマンドと引数です。1行に1要素ずつ入力してください（例: npx / -y / package-name）。"
+    },
+    "environment": {
+      "label": "Environment (KEY=VALUE)",
+      "help": "ローカル MCP 実行時の環境変数です。1行に1つ KEY=VALUE 形式で入力してください。"
+    },
+    "url": {
+      "label": "URL",
+      "help": "リモート MCP サーバーのベースエンドポイントです。"
+    },
+    "headers": {
+      "label": "Headers (KEY=VALUE)",
+      "help": "リモート MCP リクエスト時の HTTP ヘッダーです。1行に1つ KEY=VALUE 形式で入力してください。"
+    },
+    "timeout": {
+      "label": "Timeout (ms)",
+      "help": "ツール取得のタイムアウト（ミリ秒）です。空欄なら OpenCode 既定値（5000ms）を使います。"
+    },
+    "add": {
+      "placeholder": "server name",
+      "button": "Add MCP Server"
+    }
+  },
+  "agent": {
+    "model": {
+      "label": "Model",
+      "help": "このエージェントプロファイルで使うモデル識別子です。"
+    },
+    "temperature": {
+      "label": "Temperature",
+      "help": "ランダム性を制御します。低いほど決定的、高いほど創造的になります。"
+    },
+    "steps": {
+      "label": "Steps",
+      "help": "終了前に実行できるツール/推論ステップの最大数です。"
+    },
+    "add": {
+      "placeholder": "agent name",
+      "button": "Add Agent"
+    }
+  },
+  "permission": {
+    "descriptions": {
+      "read": "ローカルファイル読み取りへのアクセスを制御します。",
+      "edit": "ワークスペース内ファイル編集へのアクセスを制御します。",
+      "bash": "シェルコマンド実行へのアクセスを制御します。",
+      "glob": "ファイル名パターン検索へのアクセスを制御します。",
+      "grep": "内容パターン検索へのアクセスを制御します。",
+      "fetch": "URL からのデータ取得へのアクセスを制御します。",
+      "mcp": "MCP サーバーツール/リソースへのアクセスを制御します。",
+      "task": "委譲サブエージェント起動へのアクセスを制御します。",
+      "fallback": "このツールへのアクセスを制御します。"
+    }
+  },
+  "server": {
+    "port": {
+      "label": "Port",
+      "help": "`opencode.json` のローカル opencode サーバーで使うポートです。"
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "バインドするネットワークインターフェース。`127.0.0.1` はローカル限定です。"
+    },
+    "cors": {
+      "label": "CORS",
+      "help": "ブラウザクライアント向けの寛容な CORS 処理を有効化します。"
+    }
+  },
+  "compaction": {
+    "auto": {
+      "label": "Auto",
+      "help": "セッション履歴を自動圧縮してサイズを抑えます。"
+    },
+    "prune": {
+      "label": "Prune",
+      "help": "参照されなくなった古い圧縮成果物を削除します。"
+    }
+  },
+  "experimental": {
+    "disablePasteSummary": {
+      "label": "Disable Paste Summary",
+      "help": "大きな内容を貼り付けたときの自動要約をスキップします。"
+    },
+    "batchTool": {
+      "label": "Batch Tool",
+      "help": "対象操作でツールのグループ実行モードを有効化します。"
+    },
+    "continueLoopOnDeny": {
+      "label": "Continue Loop on Deny",
+      "help": "1つの操作が拒否されても継続ループを進めます。"
+    }
+  },
+  "web": {
+    "hintTop": "`opencode --port` 起動に使われる wrapper 設定へ保存されます。",
+    "hintBottom": "CLI オプションは `opencode.json` の server 設定より優先されます。",
+    "warningInsecureHostname": "警告: パスワードなしの 0.0.0.0 はネットワーク公開状態で安全ではありません。",
+    "launchAtLogin": {
+      "label": "ログイン時に起動",
+      "help": "OS にサインインしたときに OpenCode Desktop を自動で起動します。"
+    },
+    "port": {
+      "label": "Port",
+      "help": "wrapper Web サーバーで使うポート。空の場合は利用可能ポートを自動選択します。"
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "Web アクセス用バインド先。ローカル限定は `127.0.0.1`、LAN 公開は `0.0.0.0`。",
+      "lockedHelp": "Cloudflare Tunnel が有効な間、Hostname は 0.0.0.0 に固定されます。"
+    },
+    "mdnsDiscovery": {
+      "label": "mDNS Discovery",
+      "help": "ローカルネットワーク上にサーバーを通知し、対応クライアントが自動発見できるようにします。"
+    },
+    "mdnsDomain": {
+      "label": "mDNS Domain",
+      "help": "Discovery 有効時に通知するカスタム mDNS ホスト名です。"
+    },
+    "corsOrigins": {
+      "label": "CORS Origins",
+      "help": "許可するブラウザ Origin。1行に1つ追加し、列挙したドメインのみ Web API を呼び出せます。"
+    },
+    "authUsername": {
+      "label": "Auth Username",
+      "help": "パスワード設定時に必要な HTTP 認証ユーザー名です。"
+    },
+    "authPassword": {
+      "label": "Auth Password",
+      "help": "HTTP 認証パスワード。信頼できるローカル構成以外では空にしないでください。"
+    },
+    "extraArgs": {
+      "label": "Extra Args",
+      "help": "Web サーバープロセスへ直接渡す追加 CLI フラグです。"
+    }
+  },
+  "tunnel": {
+    "hint": "Cloudflare Tunnel 経由で OpenCode Web をインターネット公開します。",
+    "warning": "⚠ 警告: Tunnel を有効化すると OpenCode Web が外部インターネットへ公開されます。Web 設定で認証が構成されていることを確認してください。",
+    "cloudflared": {
+      "checking": "cloudflared を確認中...",
+      "installed": "Cloudflare Tunnel はインストール済みです{version}",
+      "notInstalled": "Cloudflare Tunnel は未インストールです",
+      "install": "インストール",
+      "installing": "インストール中..."
+    },
+    "enabled": {
+      "label": "Enabled",
+      "help": "Cloudflare Tunnel を有効化してローカル OpenCode をインターネット公開します。"
+    },
+    "mode": {
+      "label": "Mode",
+      "help": "Named Tunnel は固定ホスト名、Quick Tunnel は一時ランダム URL を生成します。"
+    },
+    "token": {
+      "label": "Token",
+      "help": "Cloudflare Tunnel トークン。空の場合は環境変数 CLOUDFLARE_TUNNEL_TOKEN を使用します。"
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "トンネルの公開ホスト名 (例: opencode.example.com)。"
+    },
+    "cloudflaredPath": {
+      "label": "cloudflared Path",
+      "help": "cloudflared バイナリのパス。空の場合は PATH を使用します。"
+    },
+    "quickHost": {
+      "label": "Quick Tunnel Host",
+      "waitingForHost": "cloudflared からホストを待機しています...",
+      "hostWillAppear": "トンネル起動後にここへ表示されます。"
+    }
+  },
+  "omo": {
+    "agentFields": {
+      "model": "Model",
+      "variant": "Variant",
+      "category": "Category",
+      "mode": "Mode",
+      "temperature": "Temperature",
+      "topP": "Top P",
+      "disable": "Disable",
+      "color": "Color",
+      "description": "Description",
+      "prompt": "Prompt",
+      "promptAppend": "Prompt Append",
+      "skills": "Skills",
+      "tools": "Tools",
+      "toolsHelp": "tool=true または tool=false (1行に1つ)",
+      "permission": "Permission",
+      "permissionBashHelp": "`bash` は上のグローバル値を使うか、下でコマンドごとのルールを設定してください。",
+      "permissionBashPlaceholder": "command=ask|allow|deny (1行に1つ)"
+    },
+    "add": {
+      "agentPlaceholder": "agent name",
+      "agentButton": "Add Agent",
+      "categoryPlaceholder": "category name",
+      "categoryButton": "Add Category"
+    }
+  },
+  "sidebar": {
+    "groups": {
+      "opencode": "OpenCode",
+      "opencodeWrapper": "OpenCode Wrapper",
+      "ohMyOpenCode": "Oh My OpenCode"
+    },
+    "expandNestedItems": "ネスト項目を展開",
+    "collapseNestedItems": "ネスト項目を折りたたむ"
+  },
+  "installProgress": {
+    "waiting": "待機中...",
+    "checking": "確認中...",
+    "installing": "インストール中...",
+    "ready": "準備完了",
+    "failed": "失敗"
+  }
+}

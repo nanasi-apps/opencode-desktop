@@ -1,0 +1,451 @@
+{
+  "common": {
+    "unset": "(unset)",
+    "oneValuePerLine": "One value per line",
+    "keyValuePerLine": "key=value (one per line)",
+    "emptyObject": "{}",
+    "permission": {
+      "default": "default",
+      "ask": "ask",
+      "allow": "allow",
+      "deny": "deny"
+    }
+  },
+  "bootstrap": {
+    "title": "OpenCode",
+    "subtitle": "Checking your environment..."
+  },
+  "install": {
+    "title": "OpenCode Setup",
+    "subtitle": "Choose your installation mode",
+    "back": "Back",
+    "retry": "Retry",
+    "startInstallation": "Start Installation",
+    "mode": {
+      "auto": {
+        "title": "Auto Install",
+        "subtitle": "Quick installation with optional preferences",
+        "featureHomebrew": "Installs OpenCode via Homebrew",
+        "featureOmoDefaults": "Uses npx when available, otherwise installs Bun via Homebrew",
+        "featureNoConfig": "Only asks about optional features"
+      },
+      "advanced": {
+        "title": "Advanced Install",
+        "subtitle": "Custom installation with full control",
+        "featurePackageManager": "Choose package manager (Brew/npm)",
+        "featureSubscriptions": "Configure AI provider subscriptions",
+        "featureCustomization": "Customize all installation options"
+      }
+    },
+    "advanced": {
+      "title": "Advanced Configuration",
+      "packageManager": "Package Manager",
+      "homebrewRecommended": "Homebrew (recommended)",
+      "npm": "npm",
+      "claudeSubscription": "Claude Subscription",
+      "noSubscription": "No subscription",
+      "proMaxSubscription": "Pro/Max subscription",
+      "max20": "Max20 (20x mode)",
+      "warningNoClaudeSubscription": "Warning: Sisyphus agent might not work ideally without Claude subscription.",
+      "otherAiProviders": "Other AI Providers",
+      "googleGemini": "Google Gemini",
+      "openCodeZen": "OpenCode Zen",
+      "zaiCodingPlan": "Z.ai Coding Plan"
+    },
+    "auto": {
+      "title": "Auto Configuration",
+      "optionalFeatures": "Optional Features"
+    },
+    "steps": {
+      "homebrew": "Homebrew",
+      "openCode": "OpenCode",
+      "ohMyOpenCode": "Oh My OpenCode"
+    },
+    "progress": {
+      "overall": "Overall progress: {percent}%",
+      "currentStep": "Current step: {step}",
+      "liveOutput": "Live output",
+      "downloadProgress": "Download progress: {percent}%",
+      "waitingForOutput": "Waiting for command output..."
+    },
+    "status": {
+      "waiting": "Waiting",
+      "checking": "Checking",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "failed": "Failed"
+    },
+    "complete": {
+      "title": "Installation Complete!",
+      "subtitle": "OpenCode is ready to use.",
+      "autoLaunchQuestion": "Automatically launch OpenCode Web?",
+      "autoLaunchYes": "Yes, start automatically",
+      "autoLaunchNo": "No, start manually when needed",
+      "startUsing": "Start Using OpenCode"
+    },
+    "errors": {
+      "homebrewFailed": "Homebrew installation failed: {output}",
+      "openCodeFailed": "OpenCode installation failed: {output}",
+      "ohMyOpenCodeFailed": "Oh My OpenCode installation failed: {output}"
+    }
+  },
+  "setup": {
+    "title": "OpenCode Setup",
+    "subtitle": "Preparing your environment...",
+    "openCodeWeb": "OpenCode Web",
+    "retry": "Retry",
+    "status": {
+      "starting": "Starting...",
+      "runningOnPort": "Running on port {port}",
+      "failedToStart": "Failed to start"
+    },
+    "errors": {
+      "failedToStartWeb": "Failed to start OpenCode Web. Please try restarting the app."
+    }
+  },
+  "main": {
+    "connectionLost": "Connection Lost",
+    "reload": "Reload",
+    "restartSetup": "Restart Setup",
+    "settings": "Settings",
+    "manualStart": {
+      "title": "OpenCode Web is set to manual start",
+      "subtitle": "Start it now when you want to open the web UI.",
+      "startButton": "Start OpenCode Web"
+    },
+    "tunnel": {
+      "starting": "Tunnel starting...",
+      "active": "Tunnel active: {url}",
+      "error": "Tunnel error: {error}",
+      "unknownError": "Unknown error"
+    },
+    "errors": {
+      "failedToLoadWeb": "Failed to load OpenCode Web ({error})",
+      "webProcessCrashed": "OpenCode Web process crashed.",
+      "webProcessExitedUnexpectedly": "opencode web process exited unexpectedly.",
+      "tunnelProcessExitedUnexpectedly": "Tunnel process exited unexpectedly"
+    }
+  },
+  "settings": {
+    "back": "Back",
+    "title": "Settings",
+    "saving": "Saving...",
+    "save": "Save",
+    "loadingConfiguration": "Loading configuration...",
+    "groups": {
+      "opencodeSettings": "OpenCode Settings",
+      "wrapperSettings": "Wrapper Settings",
+      "ohMyOpenCodeSettings": "Oh My OpenCode Settings"
+    },
+    "sections": {
+      "general": "General",
+      "providers": "Providers",
+      "mcpServers": "MCP Servers",
+      "agents": "Agents",
+      "permissions": "Permissions",
+      "server": "Server",
+      "compaction": "Compaction",
+      "experimental": "Experimental",
+      "web": "Web",
+      "cloudflareTunnel": "Cloudflare Tunnel",
+      "categories": "Categories",
+      "claudeCode": "Claude Code",
+      "sisyphusAgent": "Sisyphus Agent",
+      "commentChecker": "Comment Checker",
+      "autoUpdate": "Auto Update",
+      "skills": "Skills",
+      "ralphLoop": "Ralph Loop",
+      "backgroundTask": "Background Task",
+      "notification": "Notification",
+      "gitMaster": "Git Master",
+      "disabled": "Disabled"
+    },
+    "messages": {
+      "saved": "Saved",
+      "saveFailed": "Save failed",
+      "cloudflaredInstalled": "cloudflared installed",
+      "failedToInstallCloudflared": "Failed to install cloudflared",
+      "tunnelStartFailed": "tunnel start failed",
+      "webSettingsSaveFailed": "web settings save failed",
+      "savedWithWeb": "Saved (web: {web})",
+      "savedWithTunnel": "Saved (tunnel: {tunnel})",
+      "savedWithWebAndTunnel": "Saved (web: {web}, tunnel: {tunnel})",
+      "failedToLoadConfig": "Failed to load config",
+      "failedToLoadWrapperSettings": "Failed to load wrapper settings",
+      "failedToLoadOmoConfig": "Failed to load OMO config"
+    }
+  },
+  "general": {
+    "theme": {
+      "label": "Theme",
+      "placeholder": "e.g. catppuccin",
+      "description": "Theme preset used by the CLI and UI surfaces."
+    },
+    "defaultModel": {
+      "label": "Default Model",
+      "placeholder": "e.g. claude-sonnet-4-20250514",
+      "description": "Primary model used for normal coding and reasoning tasks."
+    },
+    "smallModel": {
+      "label": "Small Model",
+      "placeholder": "e.g. claude-haiku-4-20250514",
+      "description": "Lower-cost model for lightweight tasks and fast helper operations."
+    },
+    "defaultAgent": {
+      "label": "Default Agent",
+      "placeholder": "e.g. general",
+      "description": "Agent profile selected by default when no agent is explicitly specified."
+    },
+    "username": {
+      "label": "Username",
+      "placeholder": "Your name",
+      "description": "Name shown in generated content where a user identity is needed."
+    },
+    "logLevel": {
+      "label": "Log Level",
+      "description": "Controls log verbosity. Higher levels include more diagnostic details."
+    }
+  },
+  "provider": {
+    "apiKey": {
+      "label": "API Key",
+      "help": "Provider authentication token. Leave empty only for providers that do not require credentials."
+    },
+    "baseUrl": {
+      "label": "Base URL",
+      "help": "Custom API endpoint for this provider. Use when running through a proxy, gateway, or compatible self-hosted service."
+    },
+    "models": {
+      "label": "Models (one per line)",
+      "help": "Model IDs available for this provider. Enter one model per line."
+    },
+    "add": {
+      "placeholder": "provider name",
+      "button": "Add Provider"
+    }
+  },
+  "mcp": {
+    "enabled": {
+      "label": "Enabled",
+      "help": "Enable or disable this MCP server without removing its configuration."
+    },
+    "type": {
+      "label": "Type",
+      "help": "`local` launches a command on this machine. `remote` connects to an MCP server over HTTP(S)."
+    },
+    "command": {
+      "label": "Command (one arg per line)",
+      "help": "Command and arguments for launching a local MCP server. Enter one token per line, for example: npx, -y, package-name."
+    },
+    "environment": {
+      "label": "Environment (KEY=VALUE)",
+      "help": "Environment variables for local MCP execution. One KEY=VALUE pair per line."
+    },
+    "url": {
+      "label": "URL",
+      "help": "Base endpoint for the remote MCP server."
+    },
+    "headers": {
+      "label": "Headers (KEY=VALUE)",
+      "help": "HTTP headers for remote MCP requests. One KEY=VALUE pair per line."
+    },
+    "timeout": {
+      "label": "Timeout (ms)",
+      "help": "Tool discovery timeout in milliseconds. Leave empty to use OpenCode default (5000ms)."
+    },
+    "add": {
+      "placeholder": "server name",
+      "button": "Add MCP Server"
+    }
+  },
+  "agent": {
+    "model": {
+      "label": "Model",
+      "help": "Model identifier used by this agent profile."
+    },
+    "temperature": {
+      "label": "Temperature",
+      "help": "Controls randomness. Lower values are more deterministic; higher values are more creative."
+    },
+    "steps": {
+      "label": "Steps",
+      "help": "Maximum tool/reasoning steps the agent can take before finishing."
+    },
+    "add": {
+      "placeholder": "agent name",
+      "button": "Add Agent"
+    }
+  },
+  "permission": {
+    "descriptions": {
+      "read": "Controls access to reading local files.",
+      "edit": "Controls access to editing files in the workspace.",
+      "bash": "Controls access to shell command execution.",
+      "glob": "Controls access to filename pattern searches.",
+      "grep": "Controls access to content pattern searches.",
+      "fetch": "Controls access to fetching data from URLs.",
+      "mcp": "Controls access to MCP server tools and resources.",
+      "task": "Controls access to spawning delegated subagent tasks.",
+      "fallback": "Controls access for this tool."
+    }
+  },
+  "server": {
+    "port": {
+      "label": "Port",
+      "help": "Port used by the local opencode server from `opencode.json`."
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "Network interface to bind. `127.0.0.1` keeps access local to your machine."
+    },
+    "cors": {
+      "label": "CORS",
+      "help": "Enables permissive CORS handling for browser-based clients."
+    }
+  },
+  "compaction": {
+    "auto": {
+      "label": "Auto",
+      "help": "Automatically compacts session history to reduce size over time."
+    },
+    "prune": {
+      "label": "Prune",
+      "help": "Removes old compacted artifacts that are no longer referenced."
+    }
+  },
+  "experimental": {
+    "disablePasteSummary": {
+      "label": "Disable Paste Summary",
+      "help": "Skips automatic summarization when pasting large content blocks."
+    },
+    "batchTool": {
+      "label": "Batch Tool",
+      "help": "Enables grouped tool execution mode for eligible operations."
+    },
+    "continueLoopOnDeny": {
+      "label": "Continue Loop on Deny",
+      "help": "Allows continuation loops to proceed even if one action is denied."
+    }
+  },
+  "web": {
+    "hintTop": "Saved in wrapper settings used to launch `opencode --port`.",
+    "hintBottom": "CLI options override `opencode.json` server settings.",
+    "warningInsecureHostname": "Warning: hostname 0.0.0.0 without password is network-accessible and unsecured.",
+    "launchAtLogin": {
+      "label": "Launch at Login",
+      "help": "Automatically starts OpenCode Desktop when you sign in to your OS account."
+    },
+    "port": {
+      "label": "Port",
+      "help": "Port used by the wrapper web server. Leave empty to auto-select an available port."
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "Address to bind for web access. Use `127.0.0.1` for local-only access, `0.0.0.0` to expose on your LAN.",
+      "lockedHelp": "Hostname is locked to 0.0.0.0 while Cloudflare Tunnel is enabled."
+    },
+    "mdnsDiscovery": {
+      "label": "mDNS Discovery",
+      "help": "Advertises the server on local networks so compatible clients can discover it automatically."
+    },
+    "mdnsDomain": {
+      "label": "mDNS Domain",
+      "help": "Custom mDNS hostname announced when discovery is enabled."
+    },
+    "corsOrigins": {
+      "label": "CORS Origins",
+      "help": "Allowed browser origins. Add one origin per line; only listed domains can call the web API from browsers."
+    },
+    "authUsername": {
+      "label": "Auth Username",
+      "help": "Username required for HTTP authentication when a password is set."
+    },
+    "authPassword": {
+      "label": "Auth Password",
+      "help": "Password for HTTP authentication. Leave empty only for trusted local setups."
+    },
+    "extraArgs": {
+      "label": "Extra Args",
+      "help": "Additional CLI flags passed directly to the web server process."
+    }
+  },
+  "tunnel": {
+    "hint": "Expose OpenCode Web to the internet via Cloudflare Tunnel.",
+    "warning": "⚠ Warning: Enabling Tunnel will expose your OpenCode Web to the external internet. Please ensure authentication is configured in Web settings.",
+    "cloudflared": {
+      "checking": "Checking cloudflared...",
+      "installed": "Cloudflare Tunnel is installed{version}",
+      "notInstalled": "Cloudflare Tunnel is not installed",
+      "install": "Install",
+      "installing": "Installing..."
+    },
+    "enabled": {
+      "label": "Enabled",
+      "help": "Enable Cloudflare Tunnel to expose your local OpenCode instance to the internet."
+    },
+    "mode": {
+      "label": "Mode",
+      "help": "Named Tunnel uses a fixed hostname. Quick Tunnel generates a random temporary URL."
+    },
+    "token": {
+      "label": "Token",
+      "help": "Cloudflare Tunnel token. If empty, falls back to CLOUDFLARE_TUNNEL_TOKEN environment variable."
+    },
+    "hostname": {
+      "label": "Hostname",
+      "help": "Public hostname for your tunnel (e.g., opencode.example.com)."
+    },
+    "cloudflaredPath": {
+      "label": "cloudflared Path",
+      "help": "Path to cloudflared binary. Leave empty to use PATH."
+    },
+    "quickHost": {
+      "label": "Quick Tunnel Host",
+      "waitingForHost": "Waiting for host from cloudflared...",
+      "hostWillAppear": "Host will appear here after tunnel starts."
+    }
+  },
+  "omo": {
+    "agentFields": {
+      "model": "Model",
+      "variant": "Variant",
+      "category": "Category",
+      "mode": "Mode",
+      "temperature": "Temperature",
+      "topP": "Top P",
+      "disable": "Disable",
+      "color": "Color",
+      "description": "Description",
+      "prompt": "Prompt",
+      "promptAppend": "Prompt Append",
+      "skills": "Skills",
+      "tools": "Tools",
+      "toolsHelp": "tool=true or tool=false (one per line)",
+      "permission": "Permission",
+      "permissionBashHelp": "For `bash`, choose a global value above or use custom per-command rules below.",
+      "permissionBashPlaceholder": "command=ask|allow|deny (one per line)"
+    },
+    "add": {
+      "agentPlaceholder": "agent name",
+      "agentButton": "Add Agent",
+      "categoryPlaceholder": "category name",
+      "categoryButton": "Add Category"
+    }
+  },
+  "sidebar": {
+    "groups": {
+      "opencode": "OpenCode",
+      "opencodeWrapper": "OpenCode Wrapper",
+      "ohMyOpenCode": "Oh My OpenCode"
+    },
+    "expandNestedItems": "Expand nested items",
+    "collapseNestedItems": "Collapse nested items"
+  },
+  "installProgress": {
+    "waiting": "Waiting...",
+    "checking": "Checking...",
+    "installing": "Installing...",
+    "ready": "Ready",
+    "failed": "Failed"
+  }
+}

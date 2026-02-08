@@ -1,0 +1,14 @@
+appId: xyz.nanasi-apps.opencode-desktop
+productName: OpenCode Desktop
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+  icon: build/icon.png
+
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json

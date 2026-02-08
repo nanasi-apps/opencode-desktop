@@ -2,6 +2,7 @@
   "name": "opencode-wrapper",
   "version": "0.1.0",
   "description": "OpenCode desktop wrapper with auto-install and embedded web UI",
+  "license": "LGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/main/index.js",
   "author": "mattyatea",

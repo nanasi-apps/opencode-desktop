@@ -33,6 +33,7 @@
             <GeneralSection
               v-if="section.id === 'general'"
               :config="opencode.config"
+              :available-models="availableModels"
               @update="opencode.setValue"
             />
 
@@ -63,6 +64,7 @@
               :agent-names="agentNames"
               :item-anchor-ids="sectionAnchorIdMaps.agent"
               :builtin-agents="builtinAgents"
+              :available-models="availableModels"
               :collapsed-state="collapsedAgents"
               @add="opencode.addAgent"
               @remove="opencode.removeAgent"
@@ -145,6 +147,7 @@
               :section-id="section.id"
               :omo="omo"
               :load-warning="omoLoadWarning"
+              :available-models="availableModels"
               :item-anchor-ids="sectionAnchorIdMaps[section.id]"
               :collapsed-state="collapsedOmoAgents"
               @update-collapsed="(state) => collapsedOmoAgents = state"
@@ -211,6 +214,7 @@ const cloudflaredVersion = ref('')
 const tunnelRuntimeStatus = ref<'stopped' | 'starting' | 'running' | 'error'>('stopped')
 const quickTunnelUrl = ref('')
 const tunnelRuntimeError = ref('')
+const availableModels = ref<string[]>([])
 let tunnelStatusTimer: number | null = null
 
 const builtinAgents = ['plan', 'build', 'general', 'explore', 'title', 'summary', 'compaction']
@@ -521,7 +525,18 @@ async function save() {
   }
 }
 
+async function loadAvailableModels() {
+  try {
+    const client = await clientReady
+    const result = await client.config.getAvailableModels()
+    availableModels.value = result.models
+  } catch {
+    availableModels.value = []
+  }
+}
+
 onMounted(async () => {
+  await loadAvailableModels()
   await checkCloudflaredInstall()
   startTunnelStatusPolling()
   let loadedConfig: Record<string, unknown> = {}

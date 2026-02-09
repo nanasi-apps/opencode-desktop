@@ -8,11 +8,50 @@
         <label v-if="!isBlockField(field)">{{ field.label }}</label>
         <div class="field-control">
           <input
-            v-if="field.type === 'string'"
+            v-if="field.type === 'string' && !isAutocompleteField(field.key)"
             type="text"
             :value="String(omo.config[field.key] ?? '')"
             @input="omo.setFieldValue(field.key, ($event.target as HTMLInputElement).value)"
           />
+          <template v-else-if="field.type === 'string' && isAutocompleteField(field.key)">
+            <input
+              type="text"
+              :value="String(omo.config[field.key] ?? '')"
+              :style="{ 'anchor-name': getModelAnchorName(field.key) }"
+              autocomplete="off"
+              @focus="openModelMenu(field.key)"
+              @click="openModelMenu(field.key)"
+              @input="onModelInput(field.key, $event)"
+              @keydown.down.prevent="moveModelHighlight(field.key, 1)"
+              @keydown.up.prevent="moveModelHighlight(field.key, -1)"
+              @keydown.enter.prevent="selectHighlightedModel(field.key)"
+              @keydown.esc.prevent="closeModelMenu(field.key)"
+              @blur="closeModelMenuDelayed(field.key)"
+            />
+            <div
+              v-show="isModelMenuOpen(field.key) && props.availableModels.length > 0"
+              :ref="(el) => setModelMenuRef(field.key, el)"
+              popover="auto"
+              class="autocomplete-menu"
+              :style="{ 'position-anchor': getModelAnchorName(field.key) }"
+            >
+              <template v-if="getFilteredModelOptions(field.key, String(omo.config[field.key] ?? '')).length > 0">
+                <button
+                  v-for="(option, index) in getFilteredModelOptions(field.key, String(omo.config[field.key] ?? ''))"
+                  :key="option"
+                  type="button"
+                  class="autocomplete-item"
+                  :class="{ active: index === getModelHighlightIndex(field.key) }"
+                  @mousedown.prevent="selectModelOption(field.key, option)"
+                  @mouseenter="setModelHighlightIndex(field.key, index)"
+                >
+                  {{ option }}
+                </button>
+              </template>
+              <p v-else class="field-help menu-hint">{{ t('modelPicker.noMatches') }}</p>
+            </div>
+            <p v-if="props.availableModels.length === 0" class="field-help">{{ t('modelPicker.noModels') }}</p>
+          </template>
           <select
             v-else-if="field.type === 'enum'"
             :value="String(omo.config[field.key] ?? '')"
@@ -64,9 +103,10 @@
                 @toggle="toggleCollapsed(name)"
                 @remove="omo.removeAgent(name)"
               >
-                <SettingsField
+                <ModelSelectField
                   :label="t('omo.agentFields.model')"
                   :model-value="omo.getAgentStringField(name, 'model')"
+                  :models="availableModels"
                   @update:model-value="omo.setAgentStringField(name, 'model', String($event))"
                 />
                 <SettingsField
@@ -199,9 +239,10 @@
                 @remove="omo.removeCategory(name)"
               >
                 <OmoField
-                  v-for="subField in categoryValueFields"
-                  :key="`omo-category-${name}-${subField.key}`"
+                  v-for="(subField, index) in categoryValueFields"
+                  :key="`omo-category-${name}-${subField.key}-${index}`"
                   :field="subField"
+                  :available-models="props.availableModels"
                   :model-value="omo.getCategoryFieldValue(name, subField.key)"
                   @update:model-value="omo.setCategoryFieldValue(name, subField.key, $event)"
                 />
@@ -223,6 +264,7 @@
                 v-for="subField in (field.properties ?? [])"
                 :key="`omo-nested-${field.key}-${subField.key}`"
                 :field="subField"
+                :available-models="props.availableModels"
                 :model-value="getNestedFieldValue(field.key, subField.key)"
                 @update:model-value="setNestedFieldValue(field.key, subField.key, $event)"
               />
@@ -239,6 +281,7 @@
                 v-for="subField in (field.properties ?? [])"
                 :key="`omo-nested-${field.key}-${subField.key}`"
                 :field="subField"
+                :available-models="props.availableModels"
                 :model-value="getNestedFieldValue(field.key, subField.key)"
                 @update:model-value="setNestedFieldValue(field.key, subField.key, $event)"
               />
@@ -286,6 +329,7 @@ import Checkbox from '../Checkbox.vue'
 import OmoField from '../OmoField.vue'
 import SettingsCard from './SettingsCard.vue'
 import SettingsField from './SettingsField.vue'
+import ModelSelectField from './ModelSelectField.vue'
 import AddItemInput from './AddItemInput.vue'
 import type { CollapsedState, OmoSchemaField } from '../../types/settings.js'
 
@@ -293,6 +337,7 @@ const props = defineProps<{
   sectionId: string
   omo: Record<string, any>
   loadWarning?: string
+  availableModels: string[]
   collapsedState: CollapsedState
   itemAnchorIds?: Record<string, string>
 }>()
@@ -308,6 +353,10 @@ const { t } = useI18n()
 const permissionKeys = ['edit', 'bash', 'webfetch', 'doom_loop', 'external_directory']
 const newAgentName = ref('')
 const newCategoryName = ref('')
+const modelMenuOpen = ref<Record<string, boolean>>({})
+const modelHighlightIndex = ref<Record<string, number>>({})
+const modelMenuRefs = ref<Record<string, HTMLElement>>({})
+const modelAnchorNames = ref<Record<string, string>>({})
 
 const fields = computed<OmoSchemaField[]>(() => props.omo.getFieldsForSection(props.sectionId))
 const isSingleFieldSection = computed(() => fields.value.length === 1)
@@ -414,6 +463,124 @@ function getItemAnchorId(name: string): string | undefined {
   return props.itemAnchorIds?.[name] ?? buildFallbackAnchorId(name)
 }
 
+function isAutocompleteField(key: string): boolean {
+  return key === 'model' || key.endsWith('_model')
+}
+
+function getFilteredModelOptions(fieldKey: string, currentValue: string): string[] {
+  const query = String(props.omo.config[fieldKey] ?? '').trim().toLowerCase()
+  const filtered = query
+    ? props.availableModels.filter((model) => model.toLowerCase().includes(query))
+    : props.availableModels
+
+  if (currentValue && !filtered.includes(currentValue)) {
+    return [currentValue, ...filtered]
+  }
+
+  return filtered
+}
+
+function isModelMenuOpen(fieldKey: string): boolean {
+  return modelMenuOpen.value[fieldKey] === true
+}
+
+function openModelMenu(fieldKey: string) {
+  if (props.availableModels.length === 0) return
+  showModelPopover(fieldKey)
+  modelMenuOpen.value = { ...modelMenuOpen.value, [fieldKey]: true }
+}
+
+function closeModelMenu(fieldKey: string) {
+  hideModelPopover(fieldKey)
+  modelMenuOpen.value = { ...modelMenuOpen.value, [fieldKey]: false }
+  modelHighlightIndex.value = { ...modelHighlightIndex.value, [fieldKey]: -1 }
+}
+
+function closeModelMenuDelayed(fieldKey: string) {
+  window.setTimeout(() => {
+    closeModelMenu(fieldKey)
+  }, 0)
+}
+
+function onModelInput(fieldKey: string, event: Event) {
+  props.omo.setFieldValue(fieldKey, (event.target as HTMLInputElement).value)
+  openModelMenu(fieldKey)
+}
+
+function getModelHighlightIndex(fieldKey: string): number {
+  return modelHighlightIndex.value[fieldKey] ?? -1
+}
+
+function setModelHighlightIndex(fieldKey: string, index: number) {
+  modelHighlightIndex.value = { ...modelHighlightIndex.value, [fieldKey]: index }
+}
+
+function moveModelHighlight(fieldKey: string, delta: number) {
+  openModelMenu(fieldKey)
+  const options = getFilteredModelOptions(fieldKey, String(props.omo.config[fieldKey] ?? ''))
+  if (options.length === 0) {
+    setModelHighlightIndex(fieldKey, -1)
+    return
+  }
+  const current = getModelHighlightIndex(fieldKey)
+  const next = current + delta
+  if (next < 0) {
+    setModelHighlightIndex(fieldKey, options.length - 1)
+    return
+  }
+  setModelHighlightIndex(fieldKey, next % options.length)
+}
+
+function selectModelOption(fieldKey: string, option: string) {
+  props.omo.setFieldValue(fieldKey, option)
+  closeModelMenu(fieldKey)
+}
+
+function selectHighlightedModel(fieldKey: string) {
+  const options = getFilteredModelOptions(fieldKey, String(props.omo.config[fieldKey] ?? ''))
+  const index = getModelHighlightIndex(fieldKey)
+  if (index < 0 || index >= options.length) return
+  selectModelOption(fieldKey, options[index])
+}
+
+function setModelMenuRef(fieldKey: string, el: Element | null) {
+  if (el instanceof HTMLElement) {
+    modelMenuRefs.value = { ...modelMenuRefs.value, [fieldKey]: el }
+    return
+  }
+  const next = { ...modelMenuRefs.value }
+  delete next[fieldKey]
+  modelMenuRefs.value = next
+}
+
+function getModelAnchorName(fieldKey: string): string {
+  const existing = modelAnchorNames.value[fieldKey]
+  if (existing) return existing
+  const nextName = `--omo-section-${fieldKey}-${Math.random().toString(36).slice(2, 8)}`
+  modelAnchorNames.value = { ...modelAnchorNames.value, [fieldKey]: nextName }
+  return nextName
+}
+
+function showModelPopover(fieldKey: string) {
+  const pop = modelMenuRefs.value[fieldKey] as (HTMLElement & { showPopover?: () => void }) | undefined
+  if (!pop || pop.matches(':popover-open')) return
+  window.requestAnimationFrame(() => {
+    try {
+      pop.showPopover?.()
+    } catch {
+    }
+  })
+}
+
+function hideModelPopover(fieldKey: string) {
+  const pop = modelMenuRefs.value[fieldKey] as (HTMLElement & { hidePopover?: () => void }) | undefined
+  if (!pop || !pop.matches(':popover-open')) return
+  try {
+    pop.hidePopover?.()
+  } catch {
+  }
+}
+
 function buildFallbackAnchorId(name: string): string {
   const sectionPrefix = props.sectionId === 'omo-categories' ? 'omo-categories' : 'omo-agents'
   const trimmed = name.trim()
@@ -464,6 +631,7 @@ function buildFallbackAnchorId(name: string): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
 
 input[type="text"],
@@ -496,6 +664,72 @@ textarea {
   color: #aa9a90;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.autocomplete-menu {
+  margin: 0;
+  position: fixed;
+  inset: auto;
+  z-index: 1200;
+  top: calc(anchor(bottom) + 4px);
+  left: anchor(left);
+  width: anchor-size(width);
+  max-height: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #171211;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  will-change: max-height, opacity, transform;
+  transition:
+    max-height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    opacity 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+    border-color 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    overlay 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) allow-discrete,
+    display 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) allow-discrete;
+}
+
+.autocomplete-menu:popover-open {
+  max-height: 220px;
+  opacity: 1;
+  overflow-y: auto;
+  border-color: #4f433f;
+}
+
+@starting-style {
+  .autocomplete-menu:popover-open {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+.autocomplete-item {
+  display: block;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #2f2624;
+  background: transparent;
+  color: #f5efea;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background: #2a211f;
+}
+
+.menu-hint {
+  padding: 8px 12px;
 }
 
 .field-textarea {

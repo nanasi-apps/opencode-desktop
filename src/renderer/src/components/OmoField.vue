@@ -27,6 +27,7 @@
             v-for="subField in field.properties"
             :key="subField.key"
             :field="subField"
+            :available-models="availableModels"
             :model-value="getObjectValue(subField.key)"
             @update:model-value="setObjectValue(subField.key, $event)"
           />
@@ -38,12 +39,61 @@
       <label class="field-label">{{ field.label }}</label>
       <div class="field-control">
         <input
-          v-if="field.type === 'string'"
+          v-if="field.type === 'string' && !isModelField"
           type="text"
           :value="modelValue"
           @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           :placeholder="field.placeholder"
         />
+
+        <template v-else-if="field.type === 'string' && isModelField">
+          <input
+            v-if="availableModels.length > 0"
+            type="text"
+            :value="typeof modelValue === 'string' ? modelValue : ''"
+            :placeholder="field.placeholder"
+            :style="{ 'anchor-name': modelAnchorName }"
+            autocomplete="off"
+            @focus="openModelMenu"
+            @click="openModelMenu"
+            @input="onModelInput"
+            @keydown.down.prevent="moveModelHighlight(1)"
+            @keydown.up.prevent="moveModelHighlight(-1)"
+            @keydown.enter.prevent="selectHighlightedModel"
+            @keydown.esc.prevent="closeModelMenu"
+            @blur="closeModelMenuDelayed"
+          />
+          <div
+            v-show="isModelMenuOpen && availableModels.length > 0"
+            ref="modelMenuRef"
+            popover="auto"
+            class="autocomplete-menu"
+            :style="{ 'position-anchor': modelAnchorName }"
+          >
+            <template v-if="filteredModelOptions.length > 0">
+              <button
+                v-for="(opt, index) in filteredModelOptions"
+                :key="opt"
+                type="button"
+                class="autocomplete-item"
+                :class="{ active: index === modelHighlightIndex }"
+                @mousedown.prevent="selectModelOption(opt)"
+                @mouseenter="modelHighlightIndex = index"
+              >
+                {{ opt }}
+              </button>
+            </template>
+            <p v-else class="field-help menu-hint">{{ t('modelPicker.noMatches') }}</p>
+          </div>
+          <p v-if="availableModels.length === 0" class="field-help">{{ t('modelPicker.noModels') }}</p>
+          <input
+            v-if="availableModels.length === 0"
+            type="text"
+            :value="modelValue"
+            @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+            :placeholder="field.placeholder"
+          />
+        </template>
         
         <input
           v-else-if="field.type === 'number'"
@@ -109,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Checkbox from './Checkbox.vue'
 
@@ -129,11 +179,100 @@ interface OmoSchemaField {
 
 const props = defineProps<{
   field: OmoSchemaField
+  availableModels?: string[]
   modelValue?: string | number | boolean | object | any[]
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 const isNestedCollapsed = ref(false)
+const availableModels = computed(() => props.availableModels ?? [])
+const isModelField = computed(() => props.field.key === 'model' || props.field.key.endsWith('_model'))
+const isModelMenuOpen = ref(false)
+const modelHighlightIndex = ref(-1)
+const modelMenuRef = ref<HTMLElement | null>(null)
+const modelAnchorName = computed(() => `--omo-${props.field.key}-${Math.random().toString(36).slice(2, 8)}`)
+const filteredModelOptions = computed(() => {
+  const current = typeof props.modelValue === 'string' ? props.modelValue : ''
+  const query = current.trim().toLowerCase()
+  const filtered = query
+    ? availableModels.value.filter((model) => model.toLowerCase().includes(query))
+    : availableModels.value
+
+  if (current && !filtered.includes(current)) {
+    return [current, ...filtered]
+  }
+
+  return filtered
+})
+
+function openModelMenu() {
+  if (availableModels.value.length === 0) return
+  showModelPopover()
+  isModelMenuOpen.value = true
+}
+
+function closeModelMenu() {
+  hideModelPopover()
+  isModelMenuOpen.value = false
+  modelHighlightIndex.value = -1
+}
+
+function closeModelMenuDelayed() {
+  window.setTimeout(() => {
+    closeModelMenu()
+  }, 0)
+}
+
+function onModelInput(event: Event) {
+  emit('update:modelValue', (event.target as HTMLInputElement).value)
+  openModelMenu()
+}
+
+function moveModelHighlight(delta: number) {
+  openModelMenu()
+  if (filteredModelOptions.value.length === 0) {
+    modelHighlightIndex.value = -1
+    return
+  }
+  const next = modelHighlightIndex.value + delta
+  if (next < 0) {
+    modelHighlightIndex.value = filteredModelOptions.value.length - 1
+    return
+  }
+  modelHighlightIndex.value = next % filteredModelOptions.value.length
+}
+
+function selectModelOption(option: string) {
+  emit('update:modelValue', option)
+  closeModelMenu()
+}
+
+function selectHighlightedModel() {
+  if (modelHighlightIndex.value < 0 || modelHighlightIndex.value >= filteredModelOptions.value.length) return
+  selectModelOption(filteredModelOptions.value[modelHighlightIndex.value])
+}
+
+function showModelPopover() {
+  const pop = modelMenuRef.value as (HTMLElement & { showPopover?: () => void }) | null
+  if (!pop) return
+  if (pop.matches(':popover-open')) return
+  window.requestAnimationFrame(() => {
+    try {
+      pop.showPopover?.()
+    } catch {
+    }
+  })
+}
+
+function hideModelPopover() {
+  const pop = modelMenuRef.value as (HTMLElement & { hidePopover?: () => void }) | null
+  if (!pop) return
+  if (!pop.matches(':popover-open')) return
+  try {
+    pop.hidePopover?.()
+  } catch {
+  }
+}
 
 function toggleNested() {
   isNestedCollapsed.value = !isNestedCollapsed.value
@@ -389,6 +528,7 @@ function setJsonValue(raw: string) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  position: relative;
 }
 
 input[type="text"],
@@ -418,6 +558,72 @@ textarea:focus {
   color: #aa9a90;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.autocomplete-menu {
+  margin: 0;
+  position: fixed;
+  inset: auto;
+  z-index: 1200;
+  top: calc(anchor(bottom) + 4px);
+  left: anchor(left);
+  width: anchor-size(width);
+  max-height: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #171211;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  will-change: max-height, opacity, transform;
+  transition:
+    max-height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    opacity 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+    border-color 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    overlay 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) allow-discrete,
+    display 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) allow-discrete;
+}
+
+.autocomplete-menu:popover-open {
+  max-height: 220px;
+  opacity: 1;
+  overflow-y: auto;
+  border-color: #4f433f;
+}
+
+@starting-style {
+  .autocomplete-menu:popover-open {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+.autocomplete-item {
+  display: block;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #2f2624;
+  background: transparent;
+  color: #f5efea;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+  background: #2a211f;
+}
+
+.menu-hint {
+  padding: 8px 12px;
 }
 
 .omo-enum-list {

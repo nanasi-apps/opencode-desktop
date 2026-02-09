@@ -9,11 +9,11 @@
         @toggle="toggleCollapsed(name)"
         @remove="$emit('remove', name)"
       >
-        <SettingsField
+        <ModelSelectField
           :label="t('agent.model.label')"
-          type="text"
-          :model-value="getAgentValue(name, 'model')"
-          @update:model-value="$emit('updateField', name, 'model', $event as string)"
+          :model-value="String(getAgentValue(name, 'model'))"
+          :models="availableModels"
+          @update:model-value="$emit('updateField', name, 'model', $event)"
           :help="t('agent.model.help')"
         />
         <SettingsField
@@ -51,6 +51,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsCard from './SettingsCard.vue'
 import SettingsField from './SettingsField.vue'
+import ModelSelectField from './ModelSelectField.vue'
 import AddItemInput from './AddItemInput.vue'
 import type { AgentsConfig, CollapsedState } from '../../types/settings.js'
 
@@ -60,6 +61,7 @@ const props = defineProps<{
   agents: AgentsConfig
   agentNames: string[]
   builtinAgents: string[]
+  availableModels: string[]
   collapsedState: CollapsedState
   itemAnchorIds?: Record<string, string>
 }>()

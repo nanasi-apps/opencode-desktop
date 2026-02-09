@@ -1,16 +1,27 @@
 <template>
   <div class="section-body">
-    <SettingsField
-      v-for="field in generalFields"
-      :key="field.key"
-      :label="field.label"
-      :type="field.type || 'text'"
-      :model-value="getValue(field.key)"
-      @update:model-value="setValue(field.key, $event as string)"
-      :placeholder="field.placeholder"
-      :help="field.description"
-      :options="field.options"
-    />
+    <template v-for="field in generalFields" :key="field.key">
+      <ModelSelectField
+        v-if="isModelField(field.key)"
+        :label="field.label"
+        :model-value="getValue(field.key)"
+        :models="availableModels"
+        :placeholder="field.placeholder"
+        :help="field.description"
+        @update:model-value="setValue(field.key, $event)"
+      />
+
+      <SettingsField
+        v-else
+        :label="field.label"
+        :type="field.type || 'text'"
+        :model-value="getValue(field.key)"
+        @update:model-value="setValue(field.key, $event as string)"
+        :placeholder="field.placeholder"
+        :help="field.description"
+        :options="field.options"
+      />
+    </template>
   </div>
 </template>
 
@@ -18,10 +29,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingsField from './SettingsField.vue'
+import ModelSelectField from './ModelSelectField.vue'
 import type { OpencodeConfig, GeneralField } from '../../types/settings.js'
 
 const props = defineProps<{
   config: OpencodeConfig
+  availableModels: string[]
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +59,10 @@ function getValue(key: string): string {
 
 function setValue(key: string, value: string) {
   emit('update', key, value)
+}
+
+function isModelField(key: string): boolean {
+  return key === 'model' || key === 'small_model'
 }
 </script>
 

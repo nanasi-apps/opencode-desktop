@@ -114,6 +114,9 @@
     "restartSetup": "Restart Setup",
     "settings": "Settings",
     "opencodeUpdateAvailable": "OpenCode update is available",
+    "debug": {
+      "currentPort": "Port {port}"
+    },
     "manualStart": {
       "title": "OpenCode Web is set to manual start",
       "subtitle": "Start it now when you want to open the web UI.",

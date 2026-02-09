@@ -12,6 +12,7 @@ import {
 import {
   readWrapperSettings,
 } from '../../services/wrapper-settings.js'
+import { getServicePort } from '../../services/launchd-service.js'
 
 export const startTunnel = os.handler(async () => {
   const settings = await readWrapperSettings()
@@ -20,7 +21,7 @@ export const startTunnel = os.handler(async () => {
     throw new Error('Tunnel is not enabled in settings')
   }
 
-  const port = 4096
+  const port = await getServicePort(settings)
   const result = await startTunnelService(settings.tunnel, port)
   return result
 })

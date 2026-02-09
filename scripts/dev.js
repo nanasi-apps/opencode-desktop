@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import electron from 'electron'
 
+process.env.NODE_ENV = 'development'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(__dirname, '..')
 
@@ -35,7 +37,11 @@ function spawnElectron(devServerUrl, onClose) {
   const electronPath = typeof electron === 'string' ? electron : electron.toString()
   const child = spawn(electronPath, [path.resolve(root, 'dist/main/index.js')], {
     stdio: 'inherit',
-    env: { ...process.env, VITE_DEV_SERVER_URL: devServerUrl },
+    env: {
+      ...process.env,
+      NODE_ENV: 'development',
+      VITE_DEV_SERVER_URL: devServerUrl,
+    },
   })
   child.on('close', onClose)
   return child

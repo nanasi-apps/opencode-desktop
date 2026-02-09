@@ -67,7 +67,7 @@ export async function startOpencodeWeb(): Promise<{ port: number }> {
   }
 
   const settings = await readWrapperSettings()
-  const port = getServicePort(settings)
+  const port = await getServicePort(settings)
 
   const existingServerIsReachable = await canConnectToLocalPort(port)
   if (existingServerIsReachable) {
@@ -130,7 +130,7 @@ export async function getLaunchdStatus(): Promise<LaunchdServiceStatus> {
 
 export async function refreshStatus(): Promise<ProcessStatus> {
   const settings = await readWrapperSettings()
-  const port = getServicePort(settings)
+  const port = await getServicePort(settings)
 
   const launchdStatus = await getServiceStatus()
   if (launchdStatus !== 'running') {

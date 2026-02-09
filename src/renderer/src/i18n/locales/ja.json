@@ -114,6 +114,9 @@
     "restartSetup": "セットアップをやり直す",
     "settings": "設定",
     "opencodeUpdateAvailable": "OpenCode の更新があります",
+    "debug": {
+      "currentPort": "ポート {port}"
+    },
     "manualStart": {
       "title": "OpenCode Web は手動起動に設定されています",
       "subtitle": "Web UI を開くときに起動してください。",

@@ -5,6 +5,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import type { WrapperSettings } from './wrapper-settings.js'
 import { getShellEnv } from './shell-env.js'
+import { readConfig } from './config-manager.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -14,6 +15,20 @@ const LAUNCH_AGENTS_DIR = path.join(HOME_DIR, 'Library', 'LaunchAgents')
 const LOG_DIR = path.join(HOME_DIR, 'Library', 'Logs', 'opencode-web')
 const PLIST_PATH = path.join(LAUNCH_AGENTS_DIR, `${LABEL}.plist`)
 const FIXED_PORT = 4096
+
+function isValidPort(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 65535
+}
+
+function getPortFromConfig(config: Record<string, unknown>): number | null {
+  const server = config.server
+  if (!server || typeof server !== 'object') {
+    return null
+  }
+
+  const port = (server as { port?: unknown }).port
+  return isValidPort(port) ? port : null
+}
 
 function getUid(): number {
   const uid = process.getuid?.()
@@ -57,8 +72,7 @@ async function resolveOpencodePath(): Promise<string> {
   }
 }
 
-function buildProgramArgs(opencodePath: string, settings: WrapperSettings): string[] {
-  const port = settings.web.port ?? FIXED_PORT
+function buildProgramArgs(opencodePath: string, settings: WrapperSettings, port: number): string[] {
   const args = [opencodePath, 'web', '--port', String(port)]
 
   if (settings.web.hostname) {
@@ -157,7 +171,8 @@ export async function getServiceStatus(): Promise<LaunchdServiceStatus> {
 
 export async function installService(settings: WrapperSettings): Promise<void> {
   const opencodePath = await resolveOpencodePath()
-  const programArgs = buildProgramArgs(opencodePath, settings)
+  const port = await getServicePort(settings)
+  const programArgs = buildProgramArgs(opencodePath, settings, port)
   const plistXml = buildPlistXml(programArgs, settings)
 
   await mkdir(LAUNCH_AGENTS_DIR, { recursive: true })
@@ -201,7 +216,7 @@ export async function reinstallService(settings: WrapperSettings): Promise<void>
 
 export async function ensureServiceRunning(settings: WrapperSettings): Promise<{ port: number }> {
   const status = await getServiceStatus()
-  const port = settings.web.port ?? FIXED_PORT
+  const port = await getServicePort(settings)
 
   if (status === 'not_installed') {
     await installService(settings)
@@ -216,8 +231,14 @@ export async function ensureServiceRunning(settings: WrapperSettings): Promise<{
   return { port }
 }
 
-export function getServicePort(settings: WrapperSettings): number {
-  return settings.web.port ?? FIXED_PORT
+export async function getServicePort(settings: WrapperSettings): Promise<number> {
+  if (isValidPort(settings.web.port)) {
+    return settings.web.port
+  }
+
+  const config = await readConfig()
+  const configPort = getPortFromConfig(config)
+  return configPort ?? FIXED_PORT
 }
 
 export function getPlistPath(): string {

@@ -29,13 +29,7 @@ jobs:
         run: npm ci
 
       - name: Run lint
-        run: |
-          if npm run | grep -q '"lint"'; then
-            npm run lint
-          else
-            echo "No npm script 'lint' found. Running eslint directly."
-            npx eslint .
-          fi
+        run: npm run lint --if-present
 
   format:
     runs-on: ubuntu-latest
@@ -60,13 +54,7 @@ jobs:
         run: npm ci
 
       - name: Run format check
-        run: |
-          if npm run | grep -q '"format"'; then
-            npm run format
-          else
-            echo "No npm script 'format' found. Running prettier directly."
-            npx prettier --check .
-          fi
+        run: npm run format --if-present
 
   build:
     needs: [lint, format]

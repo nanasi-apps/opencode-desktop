@@ -114,6 +114,7 @@ export interface OpencodeConfig {
   server?: ServerConfig
   compaction?: CompactionConfig
   experimental?: ExperimentalConfig
+  plugin?: string[]
 }
 
 export type JsonSchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array'

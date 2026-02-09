@@ -30,14 +30,23 @@
       />
       
       <input
+        v-else-if="type === 'number'"
+        type="number"
+        :value="modelValue"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).valueAsNumber)"
+        :placeholder="placeholder"
+        :min="min"
+        :max="max"
+        :step="step"
+        :disabled="disabled"
+      />
+      
+      <input
         v-else
         :type="type"
         :value="modelValue"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         :placeholder="placeholder"
-        :min="min"
-        :max="max"
-        :step="step"
         :disabled="disabled"
       />
       

@@ -18,6 +18,7 @@ export function useOpencodeConfig() {
   const server = computed(() => config.server ?? {})
   const compaction = computed(() => config.compaction ?? {})
   const experimental = computed(() => config.experimental ?? {})
+  const plugins = computed(() => config.plugin ?? [])
 
   function setValue(key: keyof OpencodeConfig, value: unknown) {
     if (value === '' || value === undefined) {
@@ -48,27 +49,37 @@ export function useOpencodeConfig() {
   function setProviderField(name: string, path: string, value: unknown) {
     const provs = (config.provider ?? {}) as ProvidersConfig
     if (!provs[name]) provs[name] = {}
-    const parts = path.split('.')
+    
+    const parts = splitPath(path)
+    let current = provs[name] as Record<string, unknown>
+    const stack: { obj: Record<string, unknown>; key: string }[] = []
 
-    if (parts.length === 2) {
-      const parent = parts[0]
-      const child = parts[1]
-      if (!provs[name][parent]) provs[name][parent] = {}
-      const nested = provs[name][parent] as Record<string, unknown>
-      if (value === '' || value === undefined) {
-        delete nested[child]
-      } else {
-        nested[child] = value
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i]
+      if (typeof current[part] !== 'object' || current[part] === null) {
+        current[part] = {}
       }
-      if (Object.keys(nested).length === 0) {
-        delete provs[name][parent]
-      }
+      stack.push({ obj: current, key: part })
+      current = current[part] as Record<string, unknown>
+    }
+
+    const lastKey = parts[parts.length - 1]
+    
+    if (value === '' || value === undefined || (Array.isArray(value) && value.length === 0)) {
+      delete current[lastKey]
     } else {
-      const key = parts[0]
-      if (value === '' || value === undefined || (Array.isArray(value) && value.length === 0)) {
-        delete provs[name][key]
-      } else {
-        provs[name][key] = value
+      current[lastKey] = value
+    }
+
+    if (Object.keys(current).length === 0 && stack.length > 0) {
+      for (let i = stack.length - 1; i >= 0; i--) {
+        const { obj, key } = stack[i]
+        const child = obj[key] as Record<string, unknown>
+        if (Object.keys(child).length === 0) {
+          delete obj[key]
+        } else {
+          break
+        }
       }
     }
 
@@ -195,8 +206,62 @@ export function useOpencodeConfig() {
     }
   }
 
+  function addPlugin(name: string) {
+    if (!config.plugin) {
+      config.plugin = []
+    }
+    const current = config.plugin as string[]
+    if (!current.includes(name)) {
+      config.plugin = [...current, name]
+    }
+  }
+
+  function updatePlugin(index: number, name: string) {
+    const current = (config.plugin ?? []) as string[]
+    const next = [...current]
+    if (next[index] !== undefined) {
+      next[index] = name
+      config.plugin = next
+    }
+  }
+
+  function removePlugin(index: number) {
+    if (!config.plugin) return
+    const current = config.plugin as string[]
+    const next = [...current]
+    next.splice(index, 1)
+    if (next.length === 0) {
+      delete (config as Record<string, unknown>).plugin
+    } else {
+      config.plugin = next
+    }
+  }
+
   function getConfigForSave(): Record<string, unknown> {
     return JSON.parse(JSON.stringify(config))
+  }
+
+  function splitPath(path: string): string[] {
+    const parts: string[] = []
+    let current = ''
+
+    for (let i = 0; i < path.length; i++) {
+      const ch = path[i]
+      if (ch === '\\' && path[i + 1] === '.') {
+        current += '.'
+        i++
+        continue
+      }
+      if (ch === '.') {
+        parts.push(current)
+        current = ''
+        continue
+      }
+      current += ch
+    }
+
+    parts.push(current)
+    return parts
   }
 
   function loadConfig(loadedConfig: OpencodeConfig) {
@@ -212,6 +277,7 @@ export function useOpencodeConfig() {
     server,
     compaction,
     experimental,
+    plugins,
     setValue,
     setNestedValue,
     setProviderField,
@@ -226,6 +292,9 @@ export function useOpencodeConfig() {
     removeAgent,
     getPermission,
     setPermission,
+    addPlugin,
+    updatePlugin,
+    removePlugin,
     getConfigForSave,
     loadConfig,
   }

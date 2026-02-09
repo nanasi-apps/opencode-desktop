@@ -3,7 +3,7 @@
     "unset": "(unset)",
     "oneValuePerLine": "One value per line",
     "keyValuePerLine": "key=value (one per line)",
-    "emptyObject": "{}",
+    "emptyObject": "{'{}'}",
     "permission": {
       "default": "default",
       "ask": "ask",
@@ -113,6 +113,7 @@
     "reload": "Reload",
     "restartSetup": "Restart Setup",
     "settings": "Settings",
+    "opencodeUpdateAvailable": "OpenCode update is available",
     "manualStart": {
       "title": "OpenCode Web is set to manual start",
       "subtitle": "Start it now when you want to open the web UI.",
@@ -138,14 +139,28 @@
     "save": "Save",
     "restarting": "Restarting...",
     "restart": "Restart",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
     "loadingConfiguration": "Loading configuration...",
+    "changePreview": {
+      "button": "Review changes",
+      "title": "Changes before saving",
+      "close": "Close",
+      "noChanges": "No changes to save.",
+      "current": "Current",
+      "proposed": "Proposed",
+      "opencodeConfig": "OpenCode config",
+      "wrapperConfig": "OpenCode Desktop config",
+      "omoConfig": "Oh My OpenCode config"
+    },
     "groups": {
       "opencodeSettings": "OpenCode Settings",
-      "wrapperSettings": "Wrapper Settings",
+      "wrapperSettings": "OpenCode Desktop Settings",
       "ohMyOpenCodeSettings": "Oh My OpenCode Settings"
     },
     "sections": {
       "general": "General",
+      "plugins": "Plugins",
       "providers": "Providers",
       "mcpServers": "MCP Servers",
       "agents": "Agents",
@@ -153,6 +168,7 @@
       "server": "Server",
       "compaction": "Compaction",
       "experimental": "Experimental",
+      "desktop": "Desktop",
       "web": "Web",
       "cloudflareTunnel": "Cloudflare Tunnel",
       "categories": "Categories",
@@ -170,6 +186,7 @@
     "messages": {
       "saved": "Saved",
       "saveFailed": "Save failed",
+      "restartingOpencode": "Restarting OpenCode...",
       "cloudflaredInstalled": "cloudflared installed",
       "failedToInstallCloudflared": "Failed to install cloudflared",
       "tunnelStartFailed": "tunnel start failed",
@@ -224,12 +241,79 @@
       "help": "Custom API endpoint for this provider. Use when running through a proxy, gateway, or compatible self-hosted service."
     },
     "models": {
-      "label": "Models (one per line)",
+      "label": "Models",
       "help": "Model IDs available for this provider. Enter one model per line."
+    },
+    "model": {
+      "id": "Model ID",
+      "name": "Model Name",
+      "remove": "Remove model",
+      "limit": "Limit",
+      "modalities": "Modalities",
+      "modalitiesHelp": "Select one or more modalities.",
+      "variants": "Variants",
+      "contextLimit": "Context Limit",
+      "outputLimit": "Output Limit",
+      "inputModalities": "Input Modalities",
+      "outputModalities": "Output Modalities",
+      "advanced": {
+        "toggleShow": "Show advanced model settings",
+        "toggleHide": "Hide advanced model settings",
+        "idOverride": "Model ID (provider override)",
+        "family": "Family",
+        "releaseDate": "Release Date",
+        "limitInput": "Limit Input",
+        "status": "Status",
+        "experimental": "Experimental",
+        "attachment": "Attachment",
+        "reasoning": "Reasoning",
+        "temperature": "Temperature",
+        "toolCall": "Tool Call",
+        "interleaved": "Interleaved",
+        "interleavedField": "Interleaved Field",
+        "costTitle": "Cost",
+        "costOver200kTitle": "Cost (Context Over 200K)",
+        "input": "Input",
+        "output": "Output",
+        "cacheRead": "Cache Read",
+        "cacheWrite": "Cache Write",
+        "headers": "Headers (KEY=VALUE)",
+        "providerNpmOverride": "Provider NPM Override",
+        "optionsJson": "Options (JSON object)",
+        "variantsJson": "Variants (JSON object)"
+      },
+      "add": {
+        "placeholder": "model id",
+        "button": "Add Model"
+      }
+    },
+    "advanced": {
+      "toggleShow": "Show advanced provider settings",
+      "toggleHide": "Hide advanced provider settings",
+      "api": "Provider API",
+      "name": "Provider Name",
+      "id": "Provider ID",
+      "npm": "Provider NPM",
+      "env": "Provider Env (one per line)",
+      "whitelist": "Whitelist (one model ID per line)",
+      "blacklist": "Blacklist (one model ID per line)",
+      "enterpriseUrl": "Enterprise URL",
+      "setCacheKey": "Set Cache Key",
+      "timeout": "Timeout (ms or false)"
     },
     "add": {
       "placeholder": "provider name",
       "button": "Add Provider"
+    }
+  },
+  "plugin": {
+    "empty": "No plugins installed.",
+    "edit": "Edit plugin name",
+    "openNpm": "Open npm package page",
+    "remove": "Remove plugin",
+    "add": {
+      "placeholder": "plugin name (e.g. mohak34/opencode-notifier latest)",
+      "button": "Add Plugin"
     }
   },
   "mcp": {
@@ -254,8 +338,12 @@
       "help": "Base endpoint for the remote MCP server."
     },
     "headers": {
-      "label": "Headers (KEY=VALUE)",
-      "help": "HTTP headers for remote MCP requests. One KEY=VALUE pair per line."
+      "label": "Headers",
+      "help": "HTTP headers for remote MCP requests.",
+      "keyPlaceholder": "Header name",
+      "valuePlaceholder": "Header value",
+      "addRow": "Add header",
+      "removeRow": "Remove header"
     },
     "timeout": {
       "label": "Timeout (ms)",
@@ -335,10 +423,8 @@
       "help": "Allows continuation loops to proceed even if one action is denied."
     }
   },
-  "web": {
-    "hintTop": "Saved in wrapper settings used to launch `opencode --port`.",
-    "hintBottom": "CLI options override `opencode.json` server settings.",
-    "warningInsecureHostname": "Warning: hostname 0.0.0.0 without password is network-accessible and unsecured.",
+  "desktop": {
+    "hintTop": "Settings for OpenCode Desktop app behavior.",
     "launchAtLogin": {
       "label": "Launch at Login",
       "help": "Automatically starts OpenCode Desktop when you sign in to your OS account."
@@ -354,6 +440,39 @@
       "enabling": "Enabling...",
       "disabling": "Disabling..."
     },
+    "updateCheck": {
+      "label": "Desktop Updates",
+      "help": "Checks GitHub Releases for a newer OpenCode Desktop version.",
+      "checkNow": "Check for Updates",
+      "checking": "Checking...",
+      "openReleasePage": "Open release page",
+      "notCheckedYet": "Update check has not run yet.",
+      "upToDate": "Up to date (v{current}). Last checked: {checkedAt}",
+      "updateAvailable": "Update available: v{current} -> v{latest}. Last checked: {checkedAt}",
+      "error": "Update check failed: {message}"
+    },
+    "opencodeUpdate": {
+      "label": "OpenCode Updates",
+      "help": "Checks and upgrades OpenCode via Homebrew (`brew upgrade opencode`).",
+      "checkNow": "Check OpenCode",
+      "checking": "Checking...",
+      "upgradeNow": "Upgrade OpenCode",
+      "upgrading": "Upgrading...",
+      "notInstalled": "Not installed",
+      "unknownVersion": "Unknown version",
+      "notInstalledMessage": "OpenCode is not installed on this machine.",
+      "notCheckedYet": "OpenCode update check has not run yet.",
+      "upToDate": "OpenCode is up to date (v{current}). Last checked: {checkedAt}",
+      "updateAvailable": "OpenCode update available: v{current} -> v{latest}. Last checked: {checkedAt}",
+      "error": "OpenCode update check failed: {message}",
+      "upgradeCompleted": "OpenCode upgraded successfully",
+      "upgradeFailed": "Failed to upgrade OpenCode"
+    }
+  },
+  "web": {
+    "hintTop": "Saved in wrapper settings used to launch `opencode --port`.",
+    "hintBottom": "CLI options override `opencode.json` server settings.",
+    "warningInsecureHostname": "Warning: hostname 0.0.0.0 without password is network-accessible and unsecured.",
     "port": {
       "label": "Port",
       "help": "Port used by the wrapper web server. Leave empty to auto-select an available port."
@@ -454,7 +573,7 @@
   "sidebar": {
     "groups": {
       "opencode": "OpenCode",
-      "opencodeWrapper": "OpenCode Wrapper",
+      "opencodeDesktop": "OpenCode Desktop",
       "ohMyOpenCode": "Oh My OpenCode"
     },
     "expandNestedItems": "Expand nested items",

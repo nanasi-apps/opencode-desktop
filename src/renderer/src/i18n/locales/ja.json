@@ -3,7 +3,7 @@
     "unset": "(未設定)",
     "oneValuePerLine": "1行に1つの値",
     "keyValuePerLine": "key=value (1行に1つ)",
-    "emptyObject": "{}",
+    "emptyObject": "{'{}'}",
     "permission": {
       "default": "デフォルト",
       "ask": "確認",
@@ -113,6 +113,7 @@
     "reload": "再読み込み",
     "restartSetup": "セットアップをやり直す",
     "settings": "設定",
+    "opencodeUpdateAvailable": "OpenCode の更新があります",
     "manualStart": {
       "title": "OpenCode Web は手動起動に設定されています",
       "subtitle": "Web UI を開くときに起動してください。",
@@ -138,14 +139,28 @@
     "save": "保存",
     "restarting": "再起動中...",
     "restart": "再起動",
+    "expandAll": "すべて展開",
+    "collapseAll": "すべて折りたたむ",
     "loadingConfiguration": "設定を読み込み中...",
+    "changePreview": {
+      "button": "変更を確認",
+      "title": "保存前の変更確認",
+      "close": "閉じる",
+      "noChanges": "保存前の差分はありません。",
+      "current": "現在",
+      "proposed": "変更後",
+      "opencodeConfig": "OpenCode 設定",
+      "wrapperConfig": "OpenCode Desktop 設定",
+      "omoConfig": "Oh My OpenCode 設定"
+    },
     "groups": {
       "opencodeSettings": "OpenCode 設定",
-      "wrapperSettings": "Wrapper 設定",
+      "wrapperSettings": "OpenCode Desktop 設定",
       "ohMyOpenCodeSettings": "Oh My OpenCode 設定"
     },
     "sections": {
       "general": "General",
+      "plugins": "Plugins",
       "providers": "Providers",
       "mcpServers": "MCP Servers",
       "agents": "Agents",
@@ -153,6 +168,7 @@
       "server": "Server",
       "compaction": "Compaction",
       "experimental": "Experimental",
+      "desktop": "Desktop",
       "web": "Web",
       "cloudflareTunnel": "Cloudflare Tunnel",
       "categories": "Categories",
@@ -170,6 +186,7 @@
     "messages": {
       "saved": "保存しました",
       "saveFailed": "保存に失敗しました",
+      "restartingOpencode": "OpenCodeを再起動中です...",
       "cloudflaredInstalled": "cloudflared をインストールしました",
       "failedToInstallCloudflared": "cloudflared のインストールに失敗しました",
       "tunnelStartFailed": "トンネル起動に失敗しました",
@@ -224,12 +241,79 @@
       "help": "このプロバイダー用のカスタム API エンドポイントです。プロキシ/ゲートウェイ/セルフホスト互換サービス経由で使う場合に設定します。"
     },
     "models": {
-      "label": "Models (one per line)",
+      "label": "Models",
       "help": "このプロバイダーで利用可能なモデル ID。1行に1つ入力してください。"
+    },
+    "model": {
+      "id": "モデル ID",
+      "name": "モデル名",
+      "remove": "モデルを削除",
+      "limit": "リミット",
+      "modalities": "モダリティ",
+      "modalitiesHelp": "モダリティを1つ以上選択してください。",
+      "variants": "バリアント",
+      "contextLimit": "コンテキスト長",
+      "outputLimit": "出力トークン数",
+      "inputModalities": "入力モダリティ",
+      "outputModalities": "出力モダリティ",
+      "advanced": {
+        "toggleShow": "モデルの詳細設定を表示",
+        "toggleHide": "モデルの詳細設定を隠す",
+        "idOverride": "モデル ID（プロバイダー上書き）",
+        "family": "ファミリー",
+        "releaseDate": "リリース日",
+        "limitInput": "入力上限",
+        "status": "ステータス",
+        "experimental": "Experimental",
+        "attachment": "Attachment",
+        "reasoning": "Reasoning",
+        "temperature": "Temperature",
+        "toolCall": "Tool Call",
+        "interleaved": "Interleaved",
+        "interleavedField": "Interleaved Field",
+        "costTitle": "コスト",
+        "costOver200kTitle": "コスト（Context 200K 超）",
+        "input": "入力",
+        "output": "出力",
+        "cacheRead": "キャッシュ読み取り",
+        "cacheWrite": "キャッシュ書き込み",
+        "headers": "ヘッダー（KEY=VALUE）",
+        "providerNpmOverride": "Provider NPM Override",
+        "optionsJson": "Options（JSON オブジェクト）",
+        "variantsJson": "Variants（JSON オブジェクト）"
+      },
+      "add": {
+        "placeholder": "model id",
+        "button": "Add Model"
+      }
+    },
+    "advanced": {
+      "toggleShow": "プロバイダーの詳細設定を表示",
+      "toggleHide": "プロバイダーの詳細設定を隠す",
+      "api": "Provider API",
+      "name": "Provider Name",
+      "id": "Provider ID",
+      "npm": "Provider NPM",
+      "env": "Provider Env（1行に1つ）",
+      "whitelist": "Whitelist（1行に1モデル ID）",
+      "blacklist": "Blacklist（1行に1モデル ID）",
+      "enterpriseUrl": "Enterprise URL",
+      "setCacheKey": "Set Cache Key",
+      "timeout": "タイムアウト（ms または false）"
     },
     "add": {
       "placeholder": "provider name",
       "button": "Add Provider"
+    }
+  },
+  "plugin": {
+    "empty": "プラグインはインストールされていません。",
+    "edit": "プラグイン名を編集",
+    "openNpm": "npmパッケージページを開く",
+    "remove": "プラグインを削除",
+    "add": {
+      "placeholder": "プラグイン名 (例: mohak34/opencode-notifier latest)",
+      "button": "Add Plugin"
     }
   },
   "mcp": {
@@ -254,8 +338,12 @@
       "help": "リモート MCP サーバーのベースエンドポイントです。"
     },
     "headers": {
-      "label": "Headers (KEY=VALUE)",
-      "help": "リモート MCP リクエスト時の HTTP ヘッダーです。1行に1つ KEY=VALUE 形式で入力してください。"
+      "label": "Headers",
+      "help": "リモート MCP リクエスト時の HTTP ヘッダーです。",
+      "keyPlaceholder": "ヘッダー名",
+      "valuePlaceholder": "ヘッダー値",
+      "addRow": "ヘッダーを追加",
+      "removeRow": "ヘッダーを削除"
     },
     "timeout": {
       "label": "Timeout (ms)",
@@ -335,10 +423,8 @@
       "help": "1つの操作が拒否されても継続ループを進めます。"
     }
   },
-  "web": {
-    "hintTop": "`opencode --port` 起動に使われる wrapper 設定へ保存されます。",
-    "hintBottom": "CLI オプションは `opencode.json` の server 設定より優先されます。",
-    "warningInsecureHostname": "警告: パスワードなしの 0.0.0.0 はネットワーク公開状態で安全ではありません。",
+  "desktop": {
+    "hintTop": "OpenCode Desktop アプリの動作設定です。",
     "launchAtLogin": {
       "label": "ログイン時に起動",
       "help": "OS にサインインしたときに OpenCode Desktop を自動で起動します。"
@@ -354,6 +440,39 @@
       "enabling": "有効化中...",
       "disabling": "無効化中..."
     },
+    "updateCheck": {
+      "label": "デスクトップ更新",
+      "help": "GitHub Releases を確認して新しい OpenCode Desktop 版があるか判定します。",
+      "checkNow": "更新を確認",
+      "checking": "確認中...",
+      "openReleasePage": "リリースページを開く",
+      "notCheckedYet": "まだ更新確認していません。",
+      "upToDate": "最新です (v{current})。最終確認: {checkedAt}",
+      "updateAvailable": "更新があります: v{current} -> v{latest}。最終確認: {checkedAt}",
+      "error": "更新確認に失敗しました: {message}"
+    },
+    "opencodeUpdate": {
+      "label": "OpenCode 本体更新",
+      "help": "Homebrew 経由で OpenCode の更新確認と更新（`brew upgrade opencode`）を行います。",
+      "checkNow": "OpenCode を確認",
+      "checking": "確認中...",
+      "upgradeNow": "OpenCode を更新",
+      "upgrading": "更新中...",
+      "notInstalled": "未インストール",
+      "unknownVersion": "バージョン不明",
+      "notInstalledMessage": "このマシンに OpenCode がインストールされていません。",
+      "notCheckedYet": "まだ OpenCode の更新確認をしていません。",
+      "upToDate": "OpenCode は最新です (v{current})。最終確認: {checkedAt}",
+      "updateAvailable": "OpenCode の更新があります: v{current} -> v{latest}。最終確認: {checkedAt}",
+      "error": "OpenCode の更新確認に失敗しました: {message}",
+      "upgradeCompleted": "OpenCode を更新しました",
+      "upgradeFailed": "OpenCode の更新に失敗しました"
+    }
+  },
+  "web": {
+    "hintTop": "`opencode --port` 起動に使われる wrapper 設定へ保存されます。",
+    "hintBottom": "CLI オプションは `opencode.json` の server 設定より優先されます。",
+    "warningInsecureHostname": "警告: パスワードなしの 0.0.0.0 はネットワーク公開状態で安全ではありません。",
     "port": {
       "label": "Port",
       "help": "wrapper Web サーバーで使うポート。空の場合は利用可能ポートを自動選択します。"
@@ -454,7 +573,7 @@
   "sidebar": {
     "groups": {
       "opencode": "OpenCode",
-      "opencodeWrapper": "OpenCode Wrapper",
+      "opencodeDesktop": "OpenCode Desktop",
       "ohMyOpenCode": "Oh My OpenCode"
     },
     "expandNestedItems": "ネスト項目を展開",

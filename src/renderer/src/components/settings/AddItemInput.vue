@@ -6,6 +6,10 @@
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       @keydown.enter.prevent="$emit('add')"
       :placeholder="placeholder"
+      spellcheck="false"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
     />
     <button class="add-inline-btn" @click="$emit('add')">
       <IconPlus :size="14" stroke-width="2" />

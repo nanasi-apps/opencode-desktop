@@ -5,6 +5,9 @@
       <h1>{{ t('settings.title') }}</h1>
       <div class="header-actions">
         <span v-if="saveMessage" class="save-message" :class="saveMessageType">{{ saveMessage }}</span>
+        <button class="preview-btn" :disabled="saving || restarting" @click="openChangePreview">
+          {{ t('settings.changePreview.button') }}
+        </button>
         <button class="restart-btn" :disabled="restarting || saving" @click="restart">
           {{ restarting ? t('settings.restarting') : t('settings.restart') }}
         </button>
@@ -13,6 +16,38 @@
         </button>
       </div>
     </header>
+
+    <dialog
+      v-if="showChangePreview"
+      ref="changePreviewDialogRef"
+      class="change-preview-dialog"
+      :class="{ 'is-closing': isChangePreviewClosing }"
+      @cancel.prevent="closeChangePreview"
+      @click="onChangePreviewDialogClick"
+    >
+      <div class="change-preview-header">
+        <h2>{{ t('settings.changePreview.title') }}</h2>
+        <button class="change-preview-close" type="button" @click="closeChangePreview">
+          {{ t('settings.changePreview.close') }}
+        </button>
+      </div>
+      <p v-if="!hasChangePreviewDiff" class="change-preview-empty">{{ t('settings.changePreview.noChanges') }}</p>
+      <div v-else class="change-preview-list">
+        <section v-for="entry in changePreviewEntries" :key="entry.id" class="change-preview-section" v-show="entry.changed">
+          <h3>{{ entry.label }}</h3>
+          <div class="change-preview-columns">
+            <div class="change-preview-column">
+              <p>{{ t('settings.changePreview.current') }}</p>
+              <pre>{{ entry.beforeText }}</pre>
+            </div>
+            <div class="change-preview-column">
+              <p>{{ t('settings.changePreview.proposed') }}</p>
+              <pre>{{ entry.afterText }}</pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </dialog>
 
     <div v-if="loading" class="loading">{{ t('settings.loadingConfiguration') }}</div>
 
@@ -29,15 +64,51 @@
         />
 
         <div class="settings-content">
+          <div class="sections-toolbar">
+            <button class="section-control-btn" :disabled="areAllSectionsExpanded" @click="expandAllSections">
+              {{ t('settings.expandAll') }}
+            </button>
+            <button class="section-control-btn" :disabled="areAllSectionsCollapsed" @click="collapseAllSections">
+              {{ t('settings.collapseAll') }}
+            </button>
+          </div>
+
           <section class="section" v-for="section in sections" :key="section.id" :id="`section-${section.id}`">
             <p v-if="isFirstSectionInGroup(section.id)" class="section-group">{{ getGroupLabel(section.group) }}</p>
-            <h2 class="section-title">{{ section.label }}</h2>
+            <button
+              type="button"
+              class="section-title section-toggle"
+              :aria-expanded="String(!isSectionCollapsed(section.id))"
+              @click="toggleSectionCollapsed(section.id)"
+            >
+              <span class="section-title-text">{{ section.label }}</span>
+              <span class="section-chevron" :class="{ expanded: !isSectionCollapsed(section.id) }" aria-hidden="true"></span>
+            </button>
+
+            <Transition
+              name="section-collapse"
+              @enter="handleSectionEnter"
+              @after-enter="handleSectionAfterEnter"
+              @leave="handleSectionLeave"
+              @after-leave="handleSectionAfterLeave"
+            >
+              <div v-if="!isSectionCollapsed(section.id)" class="section-panel-shell">
+                <div class="section-panel">
 
             <GeneralSection
               v-if="section.id === 'general'"
               :config="opencode.config"
               :available-models="availableModels"
               @update="opencode.setValue"
+            />
+
+            <PluginSection
+              v-else-if="section.id === 'plugin'"
+              :plugins="pluginList"
+              :item-anchor-ids="pluginAnchorIdMap"
+              @add="opencode.addPlugin"
+              @remove="opencode.removePlugin"
+              @update="opencode.updatePlugin"
             />
 
             <ProviderSection
@@ -48,7 +119,6 @@
               @add="opencode.addProvider"
               @remove="opencode.removeProvider"
               @update-field="opencode.setProviderField"
-              @update-models="(name, models) => opencode.setProviderField(name, 'models', models)"
               @update-collapsed="(state) => collapsedProviders = state"
             />
 
@@ -99,9 +169,36 @@
               @update-nested="(key, value) => opencode.setNestedValue('experimental', key, value)"
             />
 
+            <DesktopSection
+              v-else-if="section.id === 'desktop'"
+              :launch-at-login="wrapper.launchAtLogin.value"
+              :launchd-status="launchdStatus"
+              :launchd-busy="launchdBusy"
+              :update-check-busy="updateCheckBusy"
+              :current-version="currentVersion"
+              :latest-version="latestVersion"
+              :update-available="updateAvailable"
+              :update-error="updateError"
+              :last-checked-at="lastCheckedAt"
+              :release-url="releaseUrl"
+              :opencode-update-busy="opencodeUpdateBusy"
+              :opencode-upgrade-busy="opencodeUpgradeBusy"
+              :opencode-installed="opencodeInstalled"
+              :opencode-current-version="opencodeCurrentVersion"
+              :opencode-latest-version="opencodeLatestVersion"
+              :opencode-update-available="opencodeUpdateAvailable"
+              :opencode-update-message="opencodeUpdateMessage"
+              :opencode-last-checked-at="opencodeLastCheckedAt"
+              @update:launch-at-login="wrapper.setLaunchAtLogin"
+              @enable:launchd="enableLaunchd"
+              @disable:launchd="disableLaunchd"
+              @check:updates="checkDesktopUpdates"
+              @check:opencode-updates="checkOpencodeUpdates"
+              @upgrade:opencode="upgradeOpencode"
+            />
+
             <WebSection
               v-else-if="section.id === 'web'"
-              :launch-at-login="wrapper.launchAtLogin.value"
               :web-port="String(wrapper.web.value.port ?? '')"
               :web-hostname="wrapper.web.value.hostname"
               :web-mdns="wrapper.web.value.mdns"
@@ -112,9 +209,6 @@
               :web-extra-args="wrapper.getWebExtraArgsString()"
               :is-network-exposed-without-auth="wrapper.isNetworkExposedWithoutAuth.value"
               :hostname-locked="wrapper.isHostnameLockedByTunnel.value"
-              :launchd-status="launchdStatus"
-              :launchd-busy="launchdBusy"
-              @update:launch-at-login="wrapper.setLaunchAtLogin"
               @update:web-port="wrapper.setWebPort"
               @update:web-hostname="wrapper.setWebHostname"
               @update:web-mdns="wrapper.setWebMdns"
@@ -123,8 +217,6 @@
               @update:web-auth-username="wrapper.setWebAuthUsername"
               @update:web-auth-password="wrapper.setWebAuthPassword"
               @update:web-extra-args="wrapper.setWebExtraArgs"
-              @enable:launchd="enableLaunchd"
-              @disable:launchd="disableLaunchd"
             />
 
             <TunnelSection
@@ -149,16 +241,19 @@
               @install:cloudflared="installCloudflared"
             />
 
-            <OmoSection
-              v-else-if="isOmoSection(section.id)"
-              :section-id="section.id"
-              :omo="omo"
-              :load-warning="omoLoadWarning"
-              :available-models="availableModels"
-              :item-anchor-ids="sectionAnchorIdMaps[section.id]"
-              :collapsed-state="collapsedOmoAgents"
-              @update-collapsed="(state) => collapsedOmoAgents = state"
-            />
+                  <OmoSection
+                    v-else-if="isOmoSection(section.id)"
+                    :section-id="section.id"
+                    :omo="omo"
+                    :load-warning="omoLoadWarning"
+                    :available-models="availableModels"
+                    :item-anchor-ids="sectionAnchorIdMaps[section.id]"
+                    :collapsed-state="collapsedOmoAgents"
+                    @update-collapsed="(state) => collapsedOmoAgents = state"
+                  />
+                </div>
+              </div>
+            </Transition>
           </section>
         </div>
       </div>
@@ -167,12 +262,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { clientReady } from '../rpc/client.js'
 import SettingsSidebar from '../components/settings/SettingsSidebar.vue'
 import GeneralSection from '../components/settings/GeneralSection.vue'
+import PluginSection from '../components/settings/PluginSection.vue'
 import ProviderSection from '../components/settings/ProviderSection.vue'
 import McpSection from '../components/settings/McpSection.vue'
 import AgentSection from '../components/settings/AgentSection.vue'
@@ -180,6 +276,7 @@ import PermissionSection from '../components/settings/PermissionSection.vue'
 import ServerSection from '../components/settings/ServerSection.vue'
 import CompactionSection from '../components/settings/CompactionSection.vue'
 import ExperimentalSection from '../components/settings/ExperimentalSection.vue'
+import DesktopSection from '../components/settings/DesktopSection.vue'
 import WebSection from '../components/settings/WebSection.vue'
 import TunnelSection from '../components/settings/TunnelSection.vue'
 import OmoSection from '../components/settings/OmoSection.vue'
@@ -191,6 +288,15 @@ import type { SettingsGroup, SettingsSection } from '../types/settings.js'
 interface SidebarAnchorItem {
   id: string
   label: string
+  children?: SidebarAnchorItem[]
+}
+
+interface ChangePreviewEntry {
+  id: 'opencode' | 'wrapper' | 'omo'
+  label: string
+  beforeText: string
+  afterText: string
+  changed: boolean
 }
 
 type SectionAnchorMap = Record<string, SidebarAnchorItem[]>
@@ -208,6 +314,9 @@ const restarting = ref(false)
 const saving = ref(false)
 const saveMessage = ref('')
 const saveMessageType = ref<'success' | 'error'>('success')
+const showChangePreview = ref(false)
+const changePreviewDialogRef = ref<HTMLDialogElement | null>(null)
+const isChangePreviewClosing = ref(false)
 const opencodeConfigPath = ref('')
 const wrapperConfigPath = ref('')
 const omoConfigPath = ref('')
@@ -215,6 +324,7 @@ const omoLoadWarning = ref('')
 const collapsedProviders = ref<Record<string, boolean>>({})
 const collapsedAgents = ref<Record<string, boolean>>({})
 const collapsedOmoAgents = ref<Record<string, boolean>>({})
+const collapsedSections = ref<Record<string, boolean>>({})
 const cloudflaredInstalled = ref(false)
 const cloudflaredChecking = ref(false)
 const cloudflaredInstalling = ref(false)
@@ -225,12 +335,34 @@ const tunnelRuntimeError = ref('')
 const availableModels = ref<string[]>([])
 const launchdStatus = ref<'running' | 'stopped' | 'not_installed'>('not_installed')
 const launchdBusy = ref(false)
+const updateCheckBusy = ref(false)
+const currentVersion = ref('0.0.0')
+const latestVersion = ref('')
+const updateAvailable = ref(false)
+const updateError = ref('')
+const lastCheckedAt = ref('')
+const releaseUrl = ref('https://github.com/nanasi-apps/opencode-desktop/releases/latest')
+const opencodeUpdateBusy = ref(false)
+const opencodeUpgradeBusy = ref(false)
+const opencodeInstalled = ref(false)
+const opencodeCurrentVersion = ref('')
+const opencodeLatestVersion = ref('')
+const opencodeUpdateAvailable = ref(false)
+const opencodeUpdateMessage = ref('')
+const opencodeLastCheckedAt = ref('')
 let tunnelStatusTimer: number | null = null
+let loadedOpencodeConfig: Record<string, unknown> = {}
+let loadedWrapperSettings: Record<string, unknown> = {}
+let loadedOmoConfig: Record<string, unknown> = {}
+let changePreviewCloseTimer: number | null = null
+
+const CHANGE_PREVIEW_ANIMATION_MS = 180
 
 const builtinAgents = ['plan', 'build', 'general', 'explore', 'title', 'summary', 'compaction']
 
 const sectionDefs = [
   { id: 'general', labelKey: 'settings.sections.general', group: 'opencode' },
+  { id: 'plugin', labelKey: 'settings.sections.plugins', group: 'opencode' },
   { id: 'provider', labelKey: 'settings.sections.providers', group: 'opencode' },
   { id: 'mcp', labelKey: 'settings.sections.mcpServers', group: 'opencode' },
   { id: 'agent', labelKey: 'settings.sections.agents', group: 'opencode' },
@@ -238,6 +370,7 @@ const sectionDefs = [
   { id: 'server', labelKey: 'settings.sections.server', group: 'opencode' },
   { id: 'compaction', labelKey: 'settings.sections.compaction', group: 'opencode' },
   { id: 'experimental', labelKey: 'settings.sections.experimental', group: 'opencode' },
+  { id: 'desktop', labelKey: 'settings.sections.desktop', group: 'wrapper' },
   { id: 'web', labelKey: 'settings.sections.web', group: 'wrapper' },
   { id: 'tunnel', labelKey: 'settings.sections.cloudflareTunnel', group: 'wrapper' },
   { id: 'omo-categories', labelKey: 'settings.sections.categories', group: 'omo' },
@@ -284,7 +417,8 @@ const omoCategoryNames = computed(() => {
 
 const sectionAnchors = computed<SectionAnchorMap>(() => {
   return {
-    provider: buildSectionAnchors('provider', Object.keys(opencode.providers.value)),
+    provider: buildProviderAnchors(),
+    plugin: buildSectionAnchors('plugin', opencode.plugins.value),
     mcp: buildSectionAnchors('mcp', Object.keys(opencode.mcpServers.value)),
     agent: buildSectionAnchors('agent', agentNames.value),
     'omo-categories': buildSectionAnchors('omo-categories', omoCategoryNames.value),
@@ -300,12 +434,171 @@ const sectionAnchorIdMaps = computed<Record<string, Record<string, string>>>(() 
   return maps
 })
 
-function goToSection(id: string) {
+const pluginList = computed<string[]>(() => opencode.plugins.value)
+const pluginAnchorIdMap = computed<Record<string, string>>(() => sectionAnchorIdMaps.value.plugin ?? {})
+
+const areAllSectionsExpanded = computed(() => sections.value.every((section) => !isSectionCollapsed(section.id)))
+const areAllSectionsCollapsed = computed(() => sections.value.every((section) => isSectionCollapsed(section.id)))
+
+const changePreviewEntries = computed<ChangePreviewEntry[]>(() => {
+  const nextOpencodeConfig = opencode.getConfigForSave()
+  const nextWrapperSettings = wrapper.getSettingsForSave()
+  const nextOmoConfig = omo.getConfigForSave()
+
+  const entries: ChangePreviewEntry[] = [
+    {
+      id: 'opencode',
+      label: t('settings.changePreview.opencodeConfig'),
+      beforeText: toPreviewJson(loadedOpencodeConfig),
+      afterText: toPreviewJson(nextOpencodeConfig),
+      changed: hasPreviewDifference(loadedOpencodeConfig, nextOpencodeConfig),
+    },
+    {
+      id: 'wrapper',
+      label: t('settings.changePreview.wrapperConfig'),
+      beforeText: toPreviewJson(loadedWrapperSettings),
+      afterText: toPreviewJson(nextWrapperSettings),
+      changed: hasPreviewDifference(loadedWrapperSettings, nextWrapperSettings),
+    },
+    {
+      id: 'omo',
+      label: t('settings.changePreview.omoConfig'),
+      beforeText: toPreviewJson(loadedOmoConfig),
+      afterText: toPreviewJson(nextOmoConfig),
+      changed: hasPreviewDifference(loadedOmoConfig, nextOmoConfig),
+    },
+  ]
+
+  return entries
+})
+
+const hasChangePreviewDiff = computed(() => changePreviewEntries.value.some((entry) => entry.changed))
+
+function isSectionCollapsed(id: string): boolean {
+  return collapsedSections.value[id] === true
+}
+
+function setAllSectionsCollapsed(collapsed: boolean) {
+  const nextState: Record<string, boolean> = {}
+  sections.value.forEach((section) => {
+    nextState[section.id] = collapsed
+  })
+  collapsedSections.value = nextState
+}
+
+function getDefaultCollapsedSections(): Record<string, boolean> {
+  const initial: Record<string, boolean> = {}
+  sectionDefs.forEach((section) => {
+    initial[section.id] = section.id !== 'general'
+  })
+  return initial
+}
+
+collapsedSections.value = getDefaultCollapsedSections()
+
+function expandAllSections() {
+  setAllSectionsCollapsed(false)
+}
+
+function collapseAllSections() {
+  setAllSectionsCollapsed(true)
+}
+
+function toggleSectionCollapsed(id: string) {
+  collapsedSections.value = {
+    ...collapsedSections.value,
+    [id]: !isSectionCollapsed(id),
+  }
+}
+
+function prepareSectionPanelAnimation(el: HTMLElement) {
+  el.style.overflow = 'hidden'
+  el.style.willChange = 'height, opacity, transform'
+  el.style.transition = 'height 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease, transform 0.28s ease'
+}
+
+function cleanupSectionPanelAnimation(el: HTMLElement) {
+  el.style.height = ''
+  el.style.overflow = ''
+  el.style.opacity = ''
+  el.style.transform = ''
+  el.style.transition = ''
+  el.style.willChange = ''
+}
+
+function handleSectionEnter(el: Element) {
+  const panel = el as HTMLElement
+  prepareSectionPanelAnimation(panel)
+  panel.style.height = '0px'
+  panel.style.opacity = '0'
+  panel.style.transform = 'translateY(-6px)'
+  void panel.offsetHeight
+  panel.style.height = `${panel.scrollHeight}px`
+  panel.style.opacity = '1'
+  panel.style.transform = 'translateY(0)'
+}
+
+function handleSectionAfterEnter(el: Element) {
+  const panel = el as HTMLElement
+  cleanupSectionPanelAnimation(panel)
+}
+
+function handleSectionLeave(el: Element) {
+  const panel = el as HTMLElement
+  prepareSectionPanelAnimation(panel)
+  panel.style.height = `${panel.scrollHeight}px`
+  panel.style.opacity = '1'
+  panel.style.transform = 'translateY(0)'
+  void panel.offsetHeight
+  panel.style.height = '0px'
+  panel.style.opacity = '0'
+  panel.style.transform = 'translateY(-6px)'
+}
+
+function handleSectionAfterLeave(el: Element) {
+  const panel = el as HTMLElement
+  cleanupSectionPanelAnimation(panel)
+}
+
+function collapseOmoAgentCards() {
+  const nextState = { ...collapsedOmoAgents.value }
+  omoAgentNames.value.forEach((name) => {
+    nextState[name] = true
+  })
+  collapsedOmoAgents.value = nextState
+}
+
+async function ensureSectionExpanded(sectionId: string) {
+  if (!isSectionCollapsed(sectionId)) return
+  collapsedSections.value = {
+    ...collapsedSections.value,
+    [sectionId]: false,
+  }
+  await nextTick()
+}
+
+async function goToSection(id: string) {
+  await ensureSectionExpanded(id)
+  if (id === 'omo-agents') {
+    collapseOmoAgentCards()
+    await nextTick()
+  }
   const target = document.getElementById(`section-${id}`)
   target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function goToAnchor(anchorId: string, sectionId: string, label?: string) {
+async function goToAnchor(anchorId: string, sectionId: string, label?: string, parentLabel?: string) {
+  await ensureSectionExpanded(sectionId)
+  let layoutChanged = false
+  if (label) {
+    layoutChanged = expandItemInSection(sectionId, label, parentLabel)
+  }
+
+  await nextTick()
+  if (layoutChanged) {
+    await waitForLayoutStabilization()
+  }
+
   const target = document.getElementById(anchorId)
   if (target) {
     scrollTargetIntoSettingsContent(target)
@@ -339,32 +632,126 @@ function goToAnchor(anchorId: string, sectionId: string, label?: string) {
   goToSection(sectionId)
 }
 
+function expandItemInSection(sectionId: string, label: string, parentLabel?: string): boolean {
+  if (sectionId === 'agent') {
+    const nextState: Record<string, boolean> = {}
+    agentNames.value.forEach((name) => {
+      nextState[name] = true
+    })
+    nextState[label] = false
+    const changed = JSON.stringify(collapsedAgents.value) !== JSON.stringify(nextState)
+    collapsedAgents.value = nextState
+    return changed
+  }
+
+  if (sectionId === 'provider') {
+    const providerName = parentLabel ?? label
+    const nextState: Record<string, boolean> = {}
+    Object.keys(opencode.providers.value).forEach((name) => {
+      nextState[name] = true
+    })
+    nextState[providerName] = false
+    const changed = JSON.stringify(collapsedProviders.value) !== JSON.stringify(nextState)
+    collapsedProviders.value = nextState
+    return changed
+  }
+
+  if (sectionId === 'omo-agents') {
+    const prevState = JSON.stringify(collapsedOmoAgents.value)
+    collapseOmoAgentCards()
+    const changed = prevState !== JSON.stringify(collapsedOmoAgents.value)
+    return changed
+  }
+
+  if (sectionId === 'omo-categories') {
+    const nextState = { ...collapsedOmoAgents.value }
+    omoCategoryNames.value.forEach((name) => {
+      nextState[`category:${name}`] = true
+    })
+    const categoryKey = `category:${label}`
+    nextState[categoryKey] = false
+    const changed = JSON.stringify(collapsedOmoAgents.value) !== JSON.stringify(nextState)
+    collapsedOmoAgents.value = nextState
+    return changed
+  }
+
+  return false
+}
+
 function normalizeAnchorLabel(value: string): string {
   return value.trim().toLowerCase()
 }
 
-function scrollTargetIntoSettingsContent(target: HTMLElement) {
+async function waitForLayoutStabilization() {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve()
+      })
+    })
+  })
+  await new Promise<void>((resolve) => {
+    window.setTimeout(() => resolve(), 320)
+  })
+}
+
+function scrollTargetIntoSettingsContent(target: HTMLElement, behavior: ScrollBehavior = 'smooth') {
   const content = document.querySelector<HTMLElement>('.settings-content')
   if (!content) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    target.scrollIntoView({ behavior, block: 'start' })
     return
   }
 
   const targetTop = target.getBoundingClientRect().top
   const contentTop = content.getBoundingClientRect().top
   const nextTop = content.scrollTop + (targetTop - contentTop) - 8
-  content.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' })
+  content.scrollTo({ top: Math.max(0, nextTop), behavior })
 }
 
 function buildSectionAnchors(sectionId: string, names: string[]): SidebarAnchorItem[] {
   return names.map((name) => ({ id: buildAnchorId(sectionId, name), label: name }))
 }
 
+function buildProviderAnchors(): SidebarAnchorItem[] {
+  const providers = opencode.providers.value
+  return Object.keys(providers).map((providerName) => {
+    const prov = providers[providerName]
+    const modelsObj = typeof prov === 'object' && prov !== null
+      ? (prov as Record<string, unknown>).models
+      : undefined
+
+    let children: SidebarAnchorItem[] = []
+    if (modelsObj && typeof modelsObj === 'object' && !Array.isArray(modelsObj)) {
+      const modelKeys = Object.keys(modelsObj as Record<string, unknown>)
+      children = modelKeys.map((modelId) => {
+        const modelData = (modelsObj as Record<string, { name?: string }>)[modelId]
+        const displayName = modelData?.name ?? modelId
+        return {
+          id: buildAnchorId('provider-model', `${providerName}::${modelId}`),
+          label: displayName,
+        }
+      })
+    }
+
+    return {
+      id: buildAnchorId('provider', providerName),
+      label: providerName,
+      children,
+    }
+  })
+}
+
 function toAnchorIdMap(items: SidebarAnchorItem[]): Record<string, string> {
-  return items.reduce<Record<string, string>>((map, item) => {
+  const map: Record<string, string> = {}
+  for (const item of items) {
     map[item.label] = item.id
-    return map
-  }, {})
+    if (item.children) {
+      for (const child of item.children) {
+        map[child.label] = child.id
+      }
+    }
+  }
+  return map
 }
 
 function buildAnchorId(sectionId: string, name: string): string {
@@ -413,6 +800,81 @@ function goBack() {
   } else {
     router.back()
   }
+}
+
+function cloneJsonObject<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function toPreviewJson(value: unknown): string {
+  return JSON.stringify(value ?? {}, null, 2)
+}
+
+function hasPreviewDifference(left: unknown, right: unknown): boolean {
+  return toPreviewJson(left) !== toPreviewJson(right)
+}
+
+async function openChangePreview() {
+  if (showChangePreview.value) return
+  showChangePreview.value = true
+  isChangePreviewClosing.value = false
+  await nextTick()
+  const dialog = changePreviewDialogRef.value
+  if (!dialog || dialog.open) return
+  dialog.showModal()
+}
+
+function closeChangePreview() {
+  if (isChangePreviewClosing.value) return
+  isChangePreviewClosing.value = true
+  if (changePreviewCloseTimer) {
+    clearTimeout(changePreviewCloseTimer)
+  }
+  changePreviewCloseTimer = window.setTimeout(() => {
+    const dialog = changePreviewDialogRef.value
+    if (dialog?.open) {
+      dialog.close()
+    }
+    showChangePreview.value = false
+    isChangePreviewClosing.value = false
+    changePreviewCloseTimer = null
+  }, CHANGE_PREVIEW_ANIMATION_MS)
+}
+
+function onChangePreviewDialogClick(event: MouseEvent) {
+  const dialog = changePreviewDialogRef.value
+  if (!dialog) return
+  const rect = dialog.getBoundingClientRect()
+  const isInside = event.clientX >= rect.left
+    && event.clientX <= rect.right
+    && event.clientY >= rect.top
+    && event.clientY <= rect.bottom
+  if (!isInside) {
+    closeChangePreview()
+  }
+}
+
+function areValuesEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false
+    return a.every((value, index) => areValuesEqual(value, b[index]))
+  }
+
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const aEntries = Object.entries(a)
+    const bEntries = Object.entries(b)
+
+    if (aEntries.length !== bEntries.length) return false
+
+    return aEntries.every(([key, value]) => {
+      if (!(key in b)) return false
+      return areValuesEqual(value, (b as Record<string, unknown>)[key])
+    })
+  }
+
+  return false
 }
 
 async function checkCloudflaredInstall() {
@@ -516,6 +978,66 @@ async function disableLaunchd() {
   }
 }
 
+async function checkDesktopUpdates() {
+  updateCheckBusy.value = true
+  updateError.value = ''
+  try {
+    const client = await clientReady
+    const result = await client.update.checkForUpdates()
+    currentVersion.value = result.currentVersion
+    latestVersion.value = result.latestVersion ?? ''
+    updateAvailable.value = result.updateAvailable
+    releaseUrl.value = result.releaseUrl
+    lastCheckedAt.value = new Date(result.checkedAt).toLocaleString()
+    updateError.value = result.error ?? ''
+  } catch (err) {
+    updateError.value = err instanceof Error ? err.message : String(err)
+    lastCheckedAt.value = new Date().toLocaleString()
+  } finally {
+    updateCheckBusy.value = false
+  }
+}
+
+async function checkOpencodeUpdates() {
+  opencodeUpdateBusy.value = true
+  opencodeUpdateMessage.value = ''
+  try {
+    const client = await clientReady
+    const result = await client.update.checkOpencodeUpdates()
+    opencodeInstalled.value = result.installed
+    opencodeCurrentVersion.value = result.currentVersion ?? ''
+    opencodeLatestVersion.value = result.latestVersion ?? ''
+    opencodeUpdateAvailable.value = result.updateAvailable
+    opencodeUpdateMessage.value = result.message ?? ''
+  } catch (err) {
+    opencodeUpdateMessage.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    opencodeLastCheckedAt.value = new Date().toLocaleString()
+    opencodeUpdateBusy.value = false
+  }
+}
+
+async function upgradeOpencode() {
+  opencodeUpgradeBusy.value = true
+  opencodeUpdateMessage.value = ''
+  try {
+    const client = await clientReady
+    const result = await client.update.upgradeOpencode()
+    if (!result.success) {
+      throw new Error(result.output || 'Failed to upgrade OpenCode')
+    }
+    await checkOpencodeUpdates()
+    saveMessage.value = t('desktop.opencodeUpdate.upgradeCompleted')
+    saveMessageType.value = 'success'
+  } catch (err) {
+    opencodeUpdateMessage.value = err instanceof Error ? err.message : String(err)
+    saveMessage.value = t('desktop.opencodeUpdate.upgradeFailed')
+    saveMessageType.value = 'error'
+  } finally {
+    opencodeUpgradeBusy.value = false
+  }
+}
+
 async function restart() {
   if (restarting.value || saving.value) return
   restarting.value = true
@@ -543,13 +1065,26 @@ async function save() {
 
   try {
     const client = await clientReady
-    await client.config.writeConfig({ config: opencode.getConfigForSave() })
-    await client.omoConfig.writeConfig({ config: omo.getConfigForSave() })
+    const nextOpencodeConfig = opencode.getConfigForSave()
+    const nextWrapperSettings = wrapper.getSettingsForSave()
+    const nextOmoConfig = omo.getConfigForSave()
+    const hasMcpChange = !areValuesEqual(loadedOpencodeConfig.mcp, nextOpencodeConfig.mcp)
+
+    if (hasMcpChange) {
+      const processStatus = await client.process.getProcessStatus()
+      if (processStatus.status === 'running') {
+        saveMessage.value = t('settings.messages.restartingOpencode')
+        saveMessageType.value = 'success'
+      }
+    }
+
+    await client.config.writeConfig({ config: nextOpencodeConfig })
+    await client.omoConfig.writeConfig({ config: nextOmoConfig })
 
     let webSaveWarning = ''
     let tunnelSaveWarning = ''
     try {
-      await client.wrapper.writeSettings({ settings: wrapper.getSettingsForSave() })
+      await client.wrapper.writeSettings({ settings: nextWrapperSettings })
 
       if (wrapper.tunnel.value.enabled) {
         try {
@@ -583,6 +1118,9 @@ async function save() {
       saveMessage.value = t('settings.messages.saved')
     }
     saveMessageType.value = 'success'
+    loadedOpencodeConfig = cloneJsonObject(nextOpencodeConfig)
+    loadedWrapperSettings = cloneJsonObject(nextWrapperSettings)
+    loadedOmoConfig = cloneJsonObject(nextOmoConfig)
   } catch (err) {
     saveMessage.value = err instanceof Error ? err.message : t('settings.messages.saveFailed')
     saveMessageType.value = 'error'
@@ -608,6 +1146,8 @@ onMounted(async () => {
   await loadAvailableModels()
   await checkCloudflaredInstall()
   await refreshLaunchdStatus()
+  await checkDesktopUpdates()
+  await checkOpencodeUpdates()
   startTunnelStatusPolling()
   let loadedConfig: Record<string, unknown> = {}
 
@@ -615,6 +1155,7 @@ onMounted(async () => {
     const client = await clientReady
     const result = await client.config.readConfig()
     loadedConfig = result.config
+    loadedOpencodeConfig = cloneJsonObject(result.config)
     opencodeConfigPath.value = result.path
     opencode.loadConfig(result.config)
   } catch {
@@ -660,19 +1201,22 @@ onMounted(async () => {
     wrapperConfigPath.value = t('settings.messages.failedToLoadWrapperSettings')
     wrapper.loadFromServerConfig(server)
   } finally {
-    try {
-      const client = await clientReady
-      const omoResult = await client.omoConfig.readConfig()
-      omoConfigPath.value = omoResult.path
-      omo.loadConfig(omoResult.config)
-      omoLoadWarning.value = typeof omoResult.parseError === 'string' ? omoResult.parseError : ''
-    } catch {
-      omoConfigPath.value = t('settings.messages.failedToLoadOmoConfig')
-      omoLoadWarning.value = ''
-    } finally {
-      await omo.loadSchema()
-      loading.value = false
-    }
+    loadedWrapperSettings = cloneJsonObject(wrapper.getSettingsForSave())
+  }
+
+  try {
+    const client = await clientReady
+    const omoResult = await client.omoConfig.readConfig()
+    omoConfigPath.value = omoResult.path
+    omo.loadConfig(omoResult.config)
+    omoLoadWarning.value = typeof omoResult.parseError === 'string' ? omoResult.parseError : ''
+  } catch {
+    omoConfigPath.value = t('settings.messages.failedToLoadOmoConfig')
+    omoLoadWarning.value = ''
+  } finally {
+    loadedOmoConfig = cloneJsonObject(omo.getConfigForSave())
+    await omo.loadSchema()
+    loading.value = false
   }
 
   Object.keys(opencode.providers.value).forEach((key) => {
@@ -689,6 +1233,13 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (changePreviewCloseTimer) {
+    clearTimeout(changePreviewCloseTimer)
+    changePreviewCloseTimer = null
+  }
+  if (changePreviewDialogRef.value?.open) {
+    changePreviewDialogRef.value.close()
+  }
   stopTunnelStatusPolling()
 })
 </script>
@@ -723,6 +1274,157 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.preview-btn {
+  background: #332b28;
+  color: #ddd1c8;
+  border: 1px solid #6a5b56;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.preview-btn:hover {
+  background: #4a3f3b;
+}
+
+.preview-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.change-preview-dialog {
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 72px);
+  background: #1a1413;
+  border: 1px solid #4f433f;
+  border-radius: 10px;
+  padding: 0;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.change-preview-dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.change-preview-dialog.is-closing {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.change-preview-dialog::backdrop {
+  background: rgba(11, 9, 9, 0.74);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.change-preview-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+.change-preview-dialog.is-closing::backdrop {
+  opacity: 0;
+}
+
+.change-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #3f3431;
+}
+
+.change-preview-header h2 {
+  margin: 0;
+  font-size: 15px;
+  color: #f5efea;
+}
+
+.change-preview-close {
+  border: 1px solid #6a5b56;
+  background: #2f2725;
+  color: #ddd1c8;
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.change-preview-list {
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.change-preview-empty {
+  margin: 0;
+  padding: 18px 16px;
+  color: #b8aaa1;
+}
+
+.change-preview-section {
+  border: 1px solid #3f3431;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.change-preview-section h3 {
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #3f3431;
+  background: #221b19;
+  font-size: 13px;
+  color: #f0e7df;
+}
+
+.change-preview-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.change-preview-column {
+  min-width: 0;
+  border-right: 1px solid #3f3431;
+}
+
+.change-preview-column:last-child {
+  border-right: none;
+}
+
+.change-preview-column p {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #aa9a90;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #3f3431;
+}
+
+.change-preview-column pre {
+  margin: 0;
+  padding: 10px 12px;
+  min-height: 120px;
+  max-height: 280px;
+  overflow: auto;
+  color: #ddd1c8;
+  background: #151110;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .back-btn {
@@ -822,6 +1524,34 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
+.sections-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.section-control-btn {
+  background: #332b28;
+  color: #ddd1c8;
+  border: 1px solid #4f433f;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.section-control-btn:hover {
+  background: #3b322f;
+  border-color: #6a5b56;
+}
+
+.section-control-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .section {
   margin-bottom: 14px;
   border: 1px solid #3f3431;
@@ -835,6 +1565,48 @@ onUnmounted(() => {
   font-weight: 600;
   font-size: 14px;
   margin: 0;
+}
+
+.section-toggle {
+  width: 100%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #e7ddd6;
+  cursor: pointer;
+  text-align: left;
+}
+
+.section-toggle:hover {
+  background: #3a2f2c;
+}
+
+.section-title-text {
+  min-width: 0;
+}
+
+.section-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #b8aaa1;
+  border-bottom: 2px solid #b8aaa1;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.section-chevron.expanded {
+  transform: rotate(225deg);
+}
+
+.section-panel-shell {
+  height: auto;
+}
+
+.section-panel {
+  overflow: hidden;
 }
 
 .section-group {
@@ -863,6 +1635,32 @@ onUnmounted(() => {
   .settings-content {
     min-height: auto;
     overflow-y: visible;
+  }
+
+  .sections-toolbar {
+    justify-content: stretch;
+  }
+
+  .section-control-btn {
+    flex: 1;
+  }
+
+  .change-preview-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .change-preview-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .change-preview-column {
+    border-right: none;
+    border-bottom: 1px solid #3f3431;
+  }
+
+  .change-preview-column:last-child {
+    border-bottom: none;
   }
 }
 </style>

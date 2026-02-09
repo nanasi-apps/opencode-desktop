@@ -48,15 +48,44 @@
           placeholder="https://..."
           :help="t('mcp.url.help')"
         />
-        <SettingsField
-          v-if="(srv as McpServerConfig)?.type === 'remote'"
-          :label="t('mcp.headers.label')"
-          type="textarea"
-          :rows="4"
-          :model-value="getKeyValueText(srv as McpServerConfig, 'headers')"
-          @update:model-value="updateKeyValueText(name as string, 'headers', $event)"
-          :help="t('mcp.headers.help')"
-        />
+        <div v-if="(srv as McpServerConfig)?.type === 'remote'" class="field headers-field">
+          <label>{{ t('mcp.headers.label') }}</label>
+          <div class="field-control">
+            <div
+              v-for="(row, rowIndex) in getHeaderRows(name as string, srv as McpServerConfig)"
+              :key="row.id"
+              class="header-row"
+            >
+              <input
+                type="text"
+                :value="row.key"
+                :placeholder="t('mcp.headers.keyPlaceholder')"
+                @input="updateHeaderRow(name as string, rowIndex, 'key', ($event.target as HTMLInputElement).value)"
+              />
+              <input
+                type="text"
+                :value="row.value"
+                :placeholder="t('mcp.headers.valuePlaceholder')"
+                @input="updateHeaderRow(name as string, rowIndex, 'value', ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                type="button"
+                class="header-row-remove"
+                :aria-label="t('mcp.headers.removeRow')"
+                @click="removeHeaderRow(name as string, rowIndex)"
+              >
+                <IconX :size="14" stroke-width="2" />
+              </button>
+            </div>
+
+            <button type="button" class="header-add-btn" @click="addHeaderRow(name as string)">
+              <IconPlus :size="14" stroke-width="2" />
+              {{ t('mcp.headers.addRow') }}
+            </button>
+
+            <p class="field-help">{{ t('mcp.headers.help') }}</p>
+          </div>
+        </div>
         <SettingsField
           :label="t('mcp.timeout.label')"
           type="number"
@@ -81,10 +110,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { IconPlus, IconX } from '@tabler/icons-vue'
 import SettingsCard from './SettingsCard.vue'
 import SettingsField from './SettingsField.vue'
 import AddItemInput from './AddItemInput.vue'
 import type { McpServersConfig, McpServerConfig } from '../../types/settings.js'
+
+interface HeaderRow {
+  id: string
+  key: string
+  value: string
+}
 
 const { t } = useI18n()
 
@@ -100,6 +136,7 @@ const emit = defineEmits<{
 }>()
 
 const newMcpName = ref('')
+const headerRowsByServer = ref<Record<string, HeaderRow[]>>({})
 
 function addMcp() {
   const name = newMcpName.value.trim()
@@ -133,6 +170,62 @@ function parseKeyValueLines(value: string): Record<string, string> {
       map[key] = rawValue
       return map
     }, {})
+}
+
+function createHeaderRow(key = '', value = ''): HeaderRow {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    key,
+    value
+  }
+}
+
+function getHeaderRows(name: string, server: McpServerConfig): HeaderRow[] {
+  const existing = headerRowsByServer.value[name]
+  if (existing) return existing
+
+  const headers = server.headers
+  const rows =
+    headers && typeof headers === 'object' && !Array.isArray(headers)
+      ? Object.entries(headers)
+          .filter(([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+          .map(([key, value]) => createHeaderRow(key, String(value)))
+      : []
+
+  headerRowsByServer.value[name] = rows.length > 0 ? rows : [createHeaderRow()]
+  return headerRowsByServer.value[name]
+}
+
+function syncHeaderRows(name: string) {
+  const rows = headerRowsByServer.value[name] ?? []
+  const parsed = rows.reduce<Record<string, string>>((map, row) => {
+    const key = row.key.trim()
+    if (!key) return map
+    map[key] = row.value
+    return map
+  }, {})
+  emit('updateField', name, 'headers', Object.keys(parsed).length > 0 ? parsed : undefined)
+}
+
+function updateHeaderRow(name: string, rowIndex: number, field: 'key' | 'value', value: string) {
+  const rows = headerRowsByServer.value[name]
+  if (!rows || !rows[rowIndex]) return
+  rows[rowIndex][field] = value
+  syncHeaderRows(name)
+}
+
+function addHeaderRow(name: string) {
+  const rows = headerRowsByServer.value[name] ?? []
+  rows.push(createHeaderRow())
+  headerRowsByServer.value[name] = rows
+}
+
+function removeHeaderRow(name: string, rowIndex: number) {
+  const rows = headerRowsByServer.value[name]
+  if (!rows) return
+  rows.splice(rowIndex, 1)
+  if (rows.length === 0) rows.push(createHeaderRow())
+  syncHeaderRows(name)
 }
 
 function getCommandValue(server: McpServerConfig): string {
@@ -193,5 +286,93 @@ function updateTimeoutValue(name: string, value: unknown) {
 <style scoped>
 .section-body {
   padding: 16px;
+}
+
+.field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.field label {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #b8aaa1;
+  padding-top: 8px;
+}
+
+.field-control {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.header-row input {
+  background: #1a1514;
+  border: 1px solid #4f433f;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #f5efea;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.header-row input:focus {
+  border-color: #3b82f6;
+}
+
+.header-row-remove,
+.header-add-btn {
+  background: none;
+  border: 1px dashed #4f433f;
+  border-radius: 6px;
+  color: #8d7d73;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.header-row-remove:hover,
+.header-add-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.header-add-btn {
+  width: fit-content;
+}
+
+.field-help {
+  margin: 0;
+  color: #aa9a90;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+@media (max-width: 768px) {
+  .header-row {
+    grid-template-columns: 1fr;
+  }
+
+  .header-row-remove {
+    justify-self: flex-start;
+  }
 }
 </style>

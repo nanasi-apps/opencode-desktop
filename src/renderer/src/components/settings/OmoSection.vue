@@ -1,5 +1,6 @@
 <template>
   <div class="section-body">
+    <p v-if="sectionId === 'omo-categories' && loadWarning" class="warning">{{ loadWarning }}</p>
     <p v-if="sectionId === 'omo-general' && omo.schemaError" class="warning">{{ omo.schemaError }}</p>
 
     <template v-for="field in fields" :key="field.key">
@@ -291,9 +292,12 @@ import type { CollapsedState, OmoSchemaField } from '../../types/settings.js'
 const props = defineProps<{
   sectionId: string
   omo: Record<string, any>
+  loadWarning?: string
   collapsedState: CollapsedState
   itemAnchorIds?: Record<string, string>
 }>()
+
+const loadWarning = computed(() => props.loadWarning ?? '')
 
 const emit = defineEmits<{
   updateCollapsed: [state: CollapsedState]

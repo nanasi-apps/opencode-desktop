@@ -63,22 +63,68 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+interface OmoConfigReadResult {
+  config: Record<string, unknown>
+  path: string
+  parseError: string | null
+}
+
+async function parseConfigFile(configPath: string): Promise<Record<string, unknown>> {
+  const raw = await readFile(configPath, 'utf-8')
+  const stripped = stripJsoncComments(raw)
+  return JSON.parse(stripped)
+}
+
 export async function getOmoConfigPath(): Promise<string> {
   if (await fileExists(CONFIG_JSONC)) return CONFIG_JSONC
   if (await fileExists(CONFIG_JSON)) return CONFIG_JSON
   return CONFIG_JSON
 }
 
-export async function readOmoConfig(): Promise<Record<string, unknown>> {
-  const configPath = await getOmoConfigPath()
+export async function readOmoConfig(): Promise<OmoConfigReadResult> {
+  const hasJsonc = await fileExists(CONFIG_JSONC)
+  const hasJson = await fileExists(CONFIG_JSON)
 
-  try {
-    const raw = await readFile(configPath, 'utf-8')
-    const stripped = stripJsoncComments(raw)
-    return JSON.parse(stripped)
-  } catch {
-    return {}
+  if (hasJsonc) {
+    try {
+      const config = await parseConfigFile(CONFIG_JSONC)
+      return { config, path: CONFIG_JSONC, parseError: null }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const parseError = `Failed to parse ${CONFIG_JSONC}: ${message}`
+      console.warn(`[omo-config] ${parseError}`)
+
+      if (hasJson) {
+        try {
+          const config = await parseConfigFile(CONFIG_JSON)
+          const fallbackNotice = `${parseError}. Falling back to ${CONFIG_JSON}.`
+          console.warn(`[omo-config] ${fallbackNotice}`)
+          return { config, path: CONFIG_JSON, parseError: fallbackNotice }
+        } catch (fallbackError) {
+          const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+          const combinedError = `${parseError}. Failed to parse ${CONFIG_JSON}: ${fallbackMessage}`
+          console.warn(`[omo-config] ${combinedError}`)
+          return { config: {}, path: CONFIG_JSONC, parseError: combinedError }
+        }
+      }
+
+      return { config: {}, path: CONFIG_JSONC, parseError }
+    }
   }
+
+  if (hasJson) {
+    try {
+      const config = await parseConfigFile(CONFIG_JSON)
+      return { config, path: CONFIG_JSON, parseError: null }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const parseError = `Failed to parse ${CONFIG_JSON}: ${message}`
+      console.warn(`[omo-config] ${parseError}`)
+      return { config: {}, path: CONFIG_JSON, parseError }
+    }
+  }
+
+  return { config: {}, path: CONFIG_JSON, parseError: null }
 }
 
 export async function writeOmoConfig(config: Record<string, unknown>): Promise<void> {

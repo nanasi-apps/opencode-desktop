@@ -144,6 +144,7 @@
               v-else-if="isOmoSection(section.id)"
               :section-id="section.id"
               :omo="omo"
+              :load-warning="omoLoadWarning"
               :item-anchor-ids="sectionAnchorIdMaps[section.id]"
               :collapsed-state="collapsedOmoAgents"
               @update-collapsed="(state) => collapsedOmoAgents = state"
@@ -199,6 +200,7 @@ const saveMessageType = ref<'success' | 'error'>('success')
 const opencodeConfigPath = ref('')
 const wrapperConfigPath = ref('')
 const omoConfigPath = ref('')
+const omoLoadWarning = ref('')
 const collapsedProviders = ref<Record<string, boolean>>({})
 const collapsedAgents = ref<Record<string, boolean>>({})
 const collapsedOmoAgents = ref<Record<string, boolean>>({})
@@ -575,14 +577,13 @@ onMounted(async () => {
   } finally {
     try {
       const client = await clientReady
-      const [omoResult, omoPathResult] = await Promise.all([
-        client.omoConfig.readConfig(),
-        client.omoConfig.getConfigPath(),
-      ])
-      omoConfigPath.value = omoPathResult.path
+      const omoResult = await client.omoConfig.readConfig()
+      omoConfigPath.value = omoResult.path
       omo.loadConfig(omoResult.config)
+      omoLoadWarning.value = typeof omoResult.parseError === 'string' ? omoResult.parseError : ''
     } catch {
       omoConfigPath.value = t('settings.messages.failedToLoadOmoConfig')
+      omoLoadWarning.value = ''
     } finally {
       await omo.loadSchema()
       loading.value = false

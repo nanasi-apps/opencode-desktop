@@ -7,11 +7,12 @@ import {
 } from '../../services/omo-config-manager.js'
 
 export const readOmoConfig = os.handler(async () => {
-  const [config, configPath] = await Promise.all([
-    readOmoConfigService(),
-    getOmoConfigPathService(),
-  ])
-  return { config, path: configPath }
+  const result = await readOmoConfigService()
+  return {
+    config: result.config,
+    path: result.path,
+    parseError: result.parseError,
+  }
 })
 
 export const writeOmoConfig = os

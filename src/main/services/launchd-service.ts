@@ -45,7 +45,8 @@ async function resolveOpencodePath(): Promise<string> {
   if (process.env.OPENCODE_BIN) return process.env.OPENCODE_BIN
 
   try {
-    const { stdout } = await execFileAsync('which', ['opencode'])
+    const env = await getShellEnv()
+    const { stdout } = await execFileAsync('which', ['opencode'], { env })
     const resolved = stdout.trim()
     if (!resolved) {
       throw new Error('Cannot find opencode binary. Add it to PATH or set OPENCODE_BIN.')

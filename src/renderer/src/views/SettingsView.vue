@@ -1143,11 +1143,11 @@ async function loadAvailableModels() {
 }
 
 onMounted(async () => {
-  await loadAvailableModels()
-  await checkCloudflaredInstall()
-  await refreshLaunchdStatus()
-  await checkDesktopUpdates()
-  await checkOpencodeUpdates()
+  void loadAvailableModels()
+  void checkCloudflaredInstall()
+  void refreshLaunchdStatus()
+  void checkDesktopUpdates()
+  void checkOpencodeUpdates()
   startTunnelStatusPolling()
   let loadedConfig: Record<string, unknown> = {}
 
@@ -1215,8 +1215,8 @@ onMounted(async () => {
     omoLoadWarning.value = ''
   } finally {
     loadedOmoConfig = cloneJsonObject(omo.getConfigForSave())
-    await omo.loadSchema()
     loading.value = false
+    void omo.loadSchema()
   }
 
   Object.keys(opencode.providers.value).forEach((key) => {

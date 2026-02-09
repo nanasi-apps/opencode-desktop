@@ -11,6 +11,11 @@
       "deny": "deny"
     }
   },
+  "modelPicker": {
+    "filterPlaceholder": "Filter models...",
+    "noMatches": "No models match this filter.",
+    "noModels": "Could not load models from `opencode models`. Enter a model ID manually."
+  },
   "bootstrap": {
     "title": "OpenCode",
     "subtitle": "Checking your environment..."

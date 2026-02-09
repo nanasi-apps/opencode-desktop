@@ -11,6 +11,11 @@
       "deny": "拒否"
     }
   },
+  "modelPicker": {
+    "filterPlaceholder": "モデルを絞り込み...",
+    "noMatches": "絞り込み条件に一致するモデルがありません。",
+    "noModels": "`opencode models` からモデルを取得できませんでした。モデル ID を手入力してください。"
+  },
   "bootstrap": {
     "title": "OpenCode",
     "subtitle": "環境を確認しています..."

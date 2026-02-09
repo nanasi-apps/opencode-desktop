@@ -12,7 +12,7 @@ import {
   checkCloudflared,
   installCloudflaredProc,
 } from './procedures/installer.js'
-import { startWeb, stopWeb, getProcessStatus } from './procedures/process.js'
+import { startWeb, stopWeb, restartWeb, getProcessStatus, getLaunchdServiceStatus, enableLaunchdService, disableLaunchdService, refreshProcessStatus } from './procedures/process.js'
 import { getOverallStatus } from './procedures/status.js'
 import { readConfig, writeConfig, getConfigPath, getAvailableModels } from './procedures/config.js'
 import { readOmoConfig, writeOmoConfig, getOmoConfigPath } from './procedures/omo-config.js'
@@ -37,7 +37,12 @@ export const router = os.router({
   process: os.router({
     startWeb,
     stopWeb,
+    restartWeb,
     getProcessStatus,
+    getLaunchdServiceStatus,
+    enableLaunchdService,
+    disableLaunchdService,
+    refreshProcessStatus,
   }),
   status: os.router({
     getOverallStatus,

@@ -136,6 +136,8 @@
     "title": "設定",
     "saving": "保存中...",
     "save": "保存",
+    "restarting": "再起動中...",
+    "restart": "再起動",
     "loadingConfiguration": "設定を読み込み中...",
     "groups": {
       "opencodeSettings": "OpenCode 設定",
@@ -175,6 +177,7 @@
       "savedWithWeb": "保存しました (web: {web})",
       "savedWithTunnel": "保存しました (tunnel: {tunnel})",
       "savedWithWebAndTunnel": "保存しました (web: {web}, tunnel: {tunnel})",
+      "restarted": "再起動しました",
       "failedToLoadConfig": "設定の読み込みに失敗しました",
       "failedToLoadWrapperSettings": "Wrapper 設定の読み込みに失敗しました",
       "failedToLoadOmoConfig": "OMO 設定の読み込みに失敗しました"
@@ -339,6 +342,17 @@
     "launchAtLogin": {
       "label": "ログイン時に起動",
       "help": "OS にサインインしたときに OpenCode Desktop を自動で起動します。"
+    },
+    "backgroundService": {
+      "label": "バックグラウンドサービス (launchd)",
+      "help": "OpenCode Web を macOS の launchd サービスとして実行します。アプリ再起動後も動作し、クラッシュ時に自動復旧します。",
+      "statusRunning": "サービス実行中",
+      "statusStopped": "サービス停止中",
+      "statusNotInstalled": "サービス未インストール",
+      "enable": "サービスを有効化",
+      "disable": "サービスを無効化",
+      "enabling": "有効化中...",
+      "disabling": "無効化中..."
     },
     "port": {
       "label": "Port",

@@ -8,10 +8,6 @@
   "scripts": {
     "dev": "node scripts/dev.js",
     "build": "node scripts/build.js",
-    "autostart:install": "node scripts/opencode-web-autostart.js install",
-    "autostart:restart": "node scripts/opencode-web-autostart.js restart",
-    "autostart:status": "node scripts/opencode-web-autostart.js status",
-    "autostart:uninstall": "node scripts/opencode-web-autostart.js uninstall",
     "build:main": "vite build --config vite.main.config.ts",
     "build:preload": "vite build --config vite.preload.config.ts",
     "build:renderer": "vite build --config vite.renderer.config.ts",
@@ -25,6 +21,7 @@
   "dependencies": {
     "@orpc/client": "^1.13.4",
     "@orpc/server": "^1.13.4",
+    "@tabler/icons-vue": "^3.36.1",
     "vue": "^3.5.27",
     "vue-i18n": "^11.2.8",
     "vue-router": "^5.0.2",

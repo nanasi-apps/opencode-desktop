@@ -136,6 +136,8 @@
     "title": "Settings",
     "saving": "Saving...",
     "save": "Save",
+    "restarting": "Restarting...",
+    "restart": "Restart",
     "loadingConfiguration": "Loading configuration...",
     "groups": {
       "opencodeSettings": "OpenCode Settings",
@@ -175,6 +177,7 @@
       "savedWithWeb": "Saved (web: {web})",
       "savedWithTunnel": "Saved (tunnel: {tunnel})",
       "savedWithWebAndTunnel": "Saved (web: {web}, tunnel: {tunnel})",
+      "restarted": "Restarted",
       "failedToLoadConfig": "Failed to load config",
       "failedToLoadWrapperSettings": "Failed to load wrapper settings",
       "failedToLoadOmoConfig": "Failed to load OMO config"
@@ -339,6 +342,17 @@
     "launchAtLogin": {
       "label": "Launch at Login",
       "help": "Automatically starts OpenCode Desktop when you sign in to your OS account."
+    },
+    "backgroundService": {
+      "label": "Background Service (launchd)",
+      "help": "Runs OpenCode Web as a macOS launchd service. Survives app restarts and auto-recovers from crashes.",
+      "statusRunning": "Service is running",
+      "statusStopped": "Service is stopped",
+      "statusNotInstalled": "Service is not installed",
+      "enable": "Enable Service",
+      "disable": "Disable Service",
+      "enabling": "Enabling...",
+      "disabling": "Disabling..."
     },
     "port": {
       "label": "Port",

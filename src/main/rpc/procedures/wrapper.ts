@@ -6,6 +6,7 @@ import {
   getWrapperSettingsPath,
   applyLoginItemSettings,
 } from '../../services/wrapper-settings.js'
+import { getServiceStatus, reinstallService } from '../../services/launchd-service.js'
 
 const tunnelSettingsSchema = z.object({
   enabled: z.boolean(),
@@ -40,6 +41,12 @@ export const writeSettings = os
   .handler(async ({ input }) => {
     const settings = await writeWrapperSettingsService(input.settings)
     applyLoginItemSettings(settings.launchAtLogin)
+
+    const serviceStatus = await getServiceStatus()
+    if (serviceStatus !== 'not_installed') {
+      await reinstallService(settings)
+    }
+
     return { settings }
   })
 

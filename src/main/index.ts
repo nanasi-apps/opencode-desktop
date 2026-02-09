@@ -2,9 +2,10 @@ import { app, BrowserWindow, Menu, MessageChannelMain, Tray, nativeImage, shell,
 import { RPCHandler } from '@orpc/server/message-port'
 import { onError } from '@orpc/server'
 import { router } from './rpc/router.js'
-import { startOpencodeWeb, stopOpencodeWeb, onProcessCrash } from './services/opencode-process.js'
+import { startOpencodeWeb, onProcessCrash } from './services/opencode-process.js'
 import { onTunnelCrash } from './services/cloudflare-tunnel-process.js'
 import { applyLoginItemSettings, readWrapperSettings } from './services/wrapper-settings.js'
+import { ensureServiceRunning, getServiceStatus } from './services/launchd-service.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -168,12 +169,11 @@ function setupTray(): void {
   })
 }
 
-function cleanupBeforeQuit(): void {
+async function cleanupBeforeQuit(): Promise<void> {
   for (const port of activePorts.values()) {
     port.close()
   }
   activePorts.clear()
-  stopOpencodeWeb()
 }
 
 async function startBackgroundTunnelIfEnabled(): Promise<void> {
@@ -191,8 +191,10 @@ async function applyWrapperStartupSettings(): Promise<void> {
   try {
     const settings = await readWrapperSettings()
     applyLoginItemSettings(settings.launchAtLogin)
-    if (settings.tunnel.enabled) {
-      await startOpencodeWeb()
+
+    const serviceStatus = await getServiceStatus()
+    if (serviceStatus !== 'not_installed') {
+      await ensureServiceRunning(settings)
     }
   } catch (err) {
     console.error('[wrapper startup settings] failed to apply', err)

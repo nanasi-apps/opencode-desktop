@@ -5,7 +5,10 @@
       <h1>{{ t('settings.title') }}</h1>
       <div class="header-actions">
         <span v-if="saveMessage" class="save-message" :class="saveMessageType">{{ saveMessage }}</span>
-        <button class="save-btn" :disabled="saving" @click="save">
+        <button class="restart-btn" :disabled="restarting || saving" @click="restart">
+          {{ restarting ? t('settings.restarting') : t('settings.restart') }}
+        </button>
+        <button class="save-btn" :disabled="saving || restarting" @click="save">
           {{ saving ? t('settings.saving') : t('settings.save') }}
         </button>
       </div>
@@ -109,6 +112,8 @@
               :web-extra-args="wrapper.getWebExtraArgsString()"
               :is-network-exposed-without-auth="wrapper.isNetworkExposedWithoutAuth.value"
               :hostname-locked="wrapper.isHostnameLockedByTunnel.value"
+              :launchd-status="launchdStatus"
+              :launchd-busy="launchdBusy"
               @update:launch-at-login="wrapper.setLaunchAtLogin"
               @update:web-port="wrapper.setWebPort"
               @update:web-hostname="wrapper.setWebHostname"
@@ -118,6 +123,8 @@
               @update:web-auth-username="wrapper.setWebAuthUsername"
               @update:web-auth-password="wrapper.setWebAuthPassword"
               @update:web-extra-args="wrapper.setWebExtraArgs"
+              @enable:launchd="enableLaunchd"
+              @disable:launchd="disableLaunchd"
             />
 
             <TunnelSection
@@ -197,6 +204,7 @@ const wrapper = useWrapperConfig()
 const omo = useOmoConfig()
 
 const loading = ref(true)
+const restarting = ref(false)
 const saving = ref(false)
 const saveMessage = ref('')
 const saveMessageType = ref<'success' | 'error'>('success')
@@ -215,6 +223,8 @@ const tunnelRuntimeStatus = ref<'stopped' | 'starting' | 'running' | 'error'>('s
 const quickTunnelUrl = ref('')
 const tunnelRuntimeError = ref('')
 const availableModels = ref<string[]>([])
+const launchdStatus = ref<'running' | 'stopped' | 'not_installed'>('not_installed')
+const launchdBusy = ref(false)
 let tunnelStatusTimer: number | null = null
 
 const builtinAgents = ['plan', 'build', 'general', 'explore', 'title', 'summary', 'compaction']
@@ -468,6 +478,65 @@ function stopTunnelStatusPolling() {
   tunnelStatusTimer = null
 }
 
+async function refreshLaunchdStatus() {
+  try {
+    const client = await clientReady
+    const result = await client.process.getLaunchdServiceStatus()
+    launchdStatus.value = result.status
+  } catch {
+    launchdStatus.value = 'not_installed'
+  }
+}
+
+async function enableLaunchd() {
+  launchdBusy.value = true
+  try {
+    const client = await clientReady
+    await client.process.enableLaunchdService()
+    await refreshLaunchdStatus()
+  } catch (err) {
+    saveMessage.value = err instanceof Error ? err.message : 'Failed to enable launchd service'
+    saveMessageType.value = 'error'
+  } finally {
+    launchdBusy.value = false
+  }
+}
+
+async function disableLaunchd() {
+  launchdBusy.value = true
+  try {
+    const client = await clientReady
+    await client.process.disableLaunchdService()
+    await refreshLaunchdStatus()
+  } catch (err) {
+    saveMessage.value = err instanceof Error ? err.message : 'Failed to disable launchd service'
+    saveMessageType.value = 'error'
+  } finally {
+    launchdBusy.value = false
+  }
+}
+
+async function restart() {
+  if (restarting.value || saving.value) return
+  restarting.value = true
+  saveMessage.value = ''
+
+  try {
+    const client = await clientReady
+    await client.process.restartWeb()
+    saveMessage.value = t('settings.messages.restarted')
+    saveMessageType.value = 'success'
+  } catch (err) {
+    saveMessage.value = err instanceof Error ? err.message : 'Restart failed'
+    saveMessageType.value = 'error'
+  } finally {
+    restarting.value = false
+    setTimeout(() => {
+      saveMessage.value = ''
+    }, 3000)
+  }
+}
+
 async function save() {
   saving.value = true
   saveMessage.value = ''
@@ -538,6 +607,7 @@ async function loadAvailableModels() {
 onMounted(async () => {
   await loadAvailableModels()
   await checkCloudflaredInstall()
+  await refreshLaunchdStatus()
   startTunnelStatusPolling()
   let loadedConfig: Record<string, unknown> = {}
 
@@ -668,6 +738,27 @@ onUnmounted(() => {
 
 .back-btn:hover {
   background: #6a5b56;
+}
+
+.restart-btn {
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.restart-btn:hover {
+  background: #d97706;
+}
+
+.restart-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .save-btn {

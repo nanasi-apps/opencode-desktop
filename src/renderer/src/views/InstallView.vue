@@ -8,7 +8,9 @@
       <div v-if="currentStep === 'mode'" class="mode-selection">
         <div class="mode-cards">
           <button class="mode-card" @click="selectMode('auto')">
-            <div class="mode-icon">🚀</div>
+            <div class="mode-icon">
+              <IconRocket :size="32" stroke-width="1.5" />
+            </div>
             <h3>{{ t('install.mode.auto.title') }}</h3>
             <p>{{ t('install.mode.auto.subtitle') }}</p>
             <ul class="mode-features">
@@ -19,7 +21,9 @@
           </button>
 
           <button class="mode-card" @click="selectMode('advanced')">
-            <div class="mode-icon">⚙️</div>
+            <div class="mode-icon">
+              <IconSettings :size="32" stroke-width="1.5" />
+            </div>
             <h3>{{ t('install.mode.advanced.title') }}</h3>
             <p>{{ t('install.mode.advanced.subtitle') }}</p>
             <ul class="mode-features">
@@ -222,7 +226,9 @@
 
       <!-- Completion -->
       <div v-else-if="currentStep === 'complete'" class="install-complete">
-        <div class="success-icon">✓</div>
+        <div class="success-icon">
+          <IconCheck :size="36" stroke-width="3" />
+        </div>
         <h2>{{ t('install.complete.title') }}</h2>
         <p>{{ t('install.complete.subtitle') }}</p>
         <div class="startup-choice">
@@ -246,6 +252,7 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { IconCheck, IconRocket, IconSettings } from '@tabler/icons-vue'
 import { clientReady } from '../rpc/client.js'
 import StatusIndicator from '../components/StatusIndicator.vue'
 import Checkbox from '../components/Checkbox.vue'

@@ -11,7 +11,8 @@
               :aria-label="isNestedCollapsed(section.id) ? t('sidebar.expandNestedItems') : t('sidebar.collapseNestedItems')"
               @click="toggleNested(section.id)"
             >
-              {{ isNestedCollapsed(section.id) ? '▸' : '▾' }}
+              <IconChevronRight v-if="isNestedCollapsed(section.id)" :size="14" stroke-width="2" />
+              <IconChevronDown v-else :size="14" stroke-width="2" />
             </button>
             <span v-else class="sidebar-toggle-placeholder" aria-hidden="true"></span>
             <button
@@ -22,23 +23,24 @@
             </button>
           </div>
         </div>
-        <div
-          v-if="hasNestedAnchors(section.id)"
-          class="sidebar-nested-shell"
-          :class="{ 'is-collapsed': isNestedCollapsed(section.id) }"
-        >
-          <div class="sidebar-nested-list">
-            <button
-              v-for="item in getSectionAnchors(section.id)"
-              :key="item.id"
-              class="sidebar-nested-link"
-              @click="$emit('goToAnchor', item.id, section.id, item.label)"
+          <Transition name="sidebar-collapse">
+            <div
+              v-if="hasNestedAnchors(section.id) && !isNestedCollapsed(section.id)"
+              class="sidebar-nested-shell"
             >
-            <span>{{ item.label }}</span>
-            </button>
-          </div>
-        </div>
-      </template>
+              <div class="sidebar-nested-list">
+                <button
+                  v-for="item in getSectionAnchors(section.id)"
+                  :key="item.id"
+                  class="sidebar-nested-link"
+                  @click="$emit('goToAnchor', item.id, section.id, item.label)"
+                >
+                <span>{{ item.label }}</span>
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </template>
     </div>
   </aside>
 </template>
@@ -46,6 +48,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { IconChevronRight, IconChevronDown } from '@tabler/icons-vue'
 import type { SettingsSection } from '../../types/settings.js'
 
 interface SidebarAnchorItem {
@@ -238,10 +241,15 @@ function formatSidebarLabel(section: SettingsSection): string {
   grid-template-rows: 1fr;
   opacity: 1;
   transform: translateY(0);
+}
+
+.sidebar-collapse-enter-active,
+.sidebar-collapse-leave-active {
   transition: grid-template-rows 0.26s ease, opacity 0.2s ease, transform 0.26s ease;
 }
 
-.sidebar-nested-shell.is-collapsed {
+.sidebar-collapse-enter-from,
+.sidebar-collapse-leave-to {
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);
@@ -264,7 +272,7 @@ function formatSidebarLabel(section: SettingsSection): string {
 
 .sidebar-toggle-btn,
 .sidebar-toggle-placeholder {
-  width: 16px;
+  width: 26px;
   height: 100%;
   flex-shrink: 0;
 }
@@ -278,6 +286,9 @@ function formatSidebarLabel(section: SettingsSection): string {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .sidebar-toggle-btn:hover {

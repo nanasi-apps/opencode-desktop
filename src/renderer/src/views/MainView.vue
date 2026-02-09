@@ -11,14 +11,18 @@
       </div>
     </div>
     <div class="tunnel-indicator" v-if="tunnelStatus !== 'stopped' || tunnelError">
-      <span v-if="tunnelStatus === 'starting'" class="tunnel-status tunnel-starting" :title="t('main.tunnel.starting')">🔄</span>
-      <span v-else-if="tunnelStatus === 'running' && tunnelPublicUrl" class="tunnel-status tunnel-running" :title="t('main.tunnel.active', { url: tunnelPublicUrl })" @click="copyTunnelUrl">🌐</span>
-      <span v-else-if="tunnelStatus === 'error' || tunnelError" class="tunnel-status tunnel-error" :title="t('main.tunnel.error', { error: tunnelError || t('main.tunnel.unknownError') })">⚠️</span>
+      <span v-if="tunnelStatus === 'starting'" class="tunnel-status tunnel-starting" :title="t('main.tunnel.starting')">
+        <IconRefresh :size="16" class="spin" />
+      </span>
+      <span v-else-if="tunnelStatus === 'running' && tunnelPublicUrl" class="tunnel-status tunnel-running" :title="t('main.tunnel.active', { url: tunnelPublicUrl })" @click="copyTunnelUrl">
+        <IconWorld :size="16" />
+      </span>
+      <span v-else-if="tunnelStatus === 'error' || tunnelError" class="tunnel-status tunnel-error" :title="t('main.tunnel.error', { error: tunnelError || t('main.tunnel.unknownError') })">
+        <IconAlertTriangle :size="16" />
+      </span>
     </div>
     <button class="settings-btn" @click="openSettings" :title="t('main.settings')">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M6.5 1L6.1 2.8a5 5 0 0 0-1.2.7L3.1 2.9l-1.5 2.6 1.7 1.3a5 5 0 0 0 0 1.4L1.6 9.5l1.5 2.6 1.8-.6a5 5 0 0 0 1.2.7L6.5 15h3l.4-2.8a5 5 0 0 0 1.2-.7l1.8.6 1.5-2.6-1.7-1.3a5 5 0 0 0 0-1.4l1.7-1.3-1.5-2.6-1.8.6a5 5 0 0 0-1.2-.7L9.5 1h-3zM8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      </svg>
+      <IconSettings :size="16" />
     </button>
     <div v-if="manualStartRequired && !webUrl && !loadError" class="manual-start-overlay">
       <div class="manual-start-content">
@@ -41,6 +45,7 @@
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { IconRefresh, IconWorld, IconAlertTriangle, IconSettings } from '@tabler/icons-vue'
 import { clientReady } from '../rpc/client.js'
 import type { TunnelStatus } from '../../../../shared/types.js'
 
@@ -357,6 +362,13 @@ onUnmounted(() => {
 }
 .tunnel-starting {
   background: rgba(59, 130, 246, 0.2);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 .tunnel-running {
   background: rgba(34, 197, 94, 0.2);

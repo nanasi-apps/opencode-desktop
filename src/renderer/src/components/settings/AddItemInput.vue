@@ -8,12 +8,15 @@
       :placeholder="placeholder"
     />
     <button class="add-inline-btn" @click="$emit('add')">
-      + {{ buttonText }}
+      <IconPlus :size="14" stroke-width="2" />
+      {{ buttonText }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { IconPlus } from '@tabler/icons-vue'
+
 defineProps<{
   modelValue: string
   placeholder?: string
@@ -52,11 +55,14 @@ defineEmits<{
   border: 1px dashed #4f433f;
   border-radius: 6px;
   color: #8d7d73;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .add-inline-btn:hover {

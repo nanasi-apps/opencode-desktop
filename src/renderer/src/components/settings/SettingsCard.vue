@@ -8,23 +8,26 @@
           class="remove-btn"
           @click.stop="$emit('remove')"
         >
-          &times;
+          <IconX :size="16" stroke-width="2" />
         </button>
       </div>
     </div>
-    <div
-      class="card-body-shell"
-      :class="{ 'is-collapsed': collapsed }"
-      :aria-hidden="collapsed ? 'true' : 'false'"
-    >
-      <div class="card-body">
-        <slot />
+    <Transition name="card-collapse">
+      <div
+        v-if="!collapsed"
+        class="card-body-shell"
+      >
+        <div class="card-body">
+          <slot />
+        </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
+import { IconX } from '@tabler/icons-vue'
+
 defineProps<{
   title: string
   collapsible?: boolean
@@ -43,7 +46,6 @@ defineEmits<{
   background: #221c1a;
   border: 1px solid #3f3431;
   border-radius: 8px;
-  padding: 14px 16px;
   margin-bottom: 12px;
 }
 
@@ -51,6 +53,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 14px 16px;
 }
 
 .card-header.clickable {
@@ -107,8 +110,8 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 12px;
   min-height: 0;
+  padding: 0 16px 14px 16px;
 }
 
 .card-body-shell {
@@ -116,14 +119,19 @@ defineEmits<{
   grid-template-rows: 1fr;
   opacity: 1;
   transform: translateY(0);
-  transition: grid-template-rows 0.28s ease, opacity 0.2s ease, transform 0.28s ease;
 }
 
 .card-body-shell > .card-body {
   overflow: hidden;
 }
 
-.card-body-shell.is-collapsed {
+.card-collapse-enter-active,
+.card-collapse-leave-active {
+  transition: grid-template-rows 0.28s ease, opacity 0.2s ease, transform 0.28s ease;
+}
+
+.card-collapse-enter-from,
+.card-collapse-leave-to {
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);

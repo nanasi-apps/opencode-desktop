@@ -17,22 +17,23 @@
         <p v-if="field.description" class="field-help">{{ field.description }}</p>
       </div>
 
-      <div
-        class="nested-shell"
-        :class="{ 'is-collapsed': isNestedCollapsed }"
-        :aria-hidden="isNestedCollapsed ? 'true' : 'false'"
-      >
-        <div class="nested-content">
-          <OmoField
-            v-for="subField in field.properties"
-            :key="subField.key"
-            :field="subField"
-            :available-models="availableModels"
-            :model-value="getObjectValue(subField.key)"
-            @update:model-value="setObjectValue(subField.key, $event)"
-          />
+      <Transition name="nested-collapse">
+        <div
+          v-if="!isNestedCollapsed"
+          class="nested-shell"
+        >
+          <div class="nested-content">
+            <OmoField
+              v-for="subField in field.properties"
+              :key="subField.key"
+              :field="subField"
+              :available-models="availableModels"
+              :model-value="getObjectValue(subField.key)"
+              @update:model-value="setObjectValue(subField.key, $event)"
+            />
+          </div>
         </div>
-      </div>
+      </Transition>
     </template>
 
     <template v-else>
@@ -477,7 +478,6 @@ function setJsonValue(raw: string) {
   grid-template-rows: 1fr;
   opacity: 1;
   transform: translateY(0);
-  transition: grid-template-rows 0.28s ease, opacity 0.2s ease, transform 0.28s ease;
 }
 
 .nested-shell > .nested-content {
@@ -485,7 +485,13 @@ function setJsonValue(raw: string) {
   min-height: 0;
 }
 
-.nested-shell.is-collapsed {
+.nested-collapse-enter-active,
+.nested-collapse-leave-active {
+  transition: grid-template-rows 0.28s ease, opacity 0.2s ease, transform 0.28s ease;
+}
+
+.nested-collapse-enter-from,
+.nested-collapse-leave-to {
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);

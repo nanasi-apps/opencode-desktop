@@ -18,7 +18,9 @@
     "postinstall": "electron-builder install-app-deps",
     "pack": "npm run build && electron-builder --mac --config",
     "dist": "npm run build && electron-builder --mac --config --publish never",
-    "typecheck": "tsc --noEmit && vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit && vue-tsc --noEmit",
+    "format": "echo 'No format script configured'",
+    "lint": "echo 'No lint script configured'"
   },
   "dependencies": {
     "@orpc/client": "^1.13.4",

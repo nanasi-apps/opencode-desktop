@@ -30,6 +30,9 @@
         aria-hidden="true"
       ></span>
     </button>
+    <div v-if="showDebugPortBadge && currentDisplayedPort" class="debug-port-badge">
+      {{ t('main.debug.currentPort', { port: currentDisplayedPort }) }}
+    </div>
     <div v-if="manualStartRequired && !webUrl && !loadError" class="manual-start-overlay">
       <div class="manual-start-content">
         <h2>{{ t('main.manualStart.title') }}</h2>
@@ -69,11 +72,23 @@ const tunnelError = ref<string | null>(null)
 let listenersAttached = false
 let tunnelRefreshInterval: number | null = null
 let opencodeUpdateInterval: number | null = null
+let projectStateBackupInterval: number | null = null
+let didAttemptProjectRestore = false
 const opencodeUpdateAvailable = ref(false)
 
 const webUrl = computed(() => {
   if (!webPort.value) return null
   return `http://localhost:${webPort.value}`
+})
+
+const showDebugPortBadge = computed(() => {
+  const debugQuery = route.query.debug
+  const debugValue = Array.isArray(debugQuery) ? debugQuery[0] : debugQuery
+  return import.meta.env.DEV || debugValue === '1' || debugValue === 'true'
+})
+
+const currentDisplayedPort = computed(() => {
+  return webPort.value ?? getRoutePort()
 })
 
 function getRoutePort(): number | null {
@@ -163,6 +178,110 @@ async function refreshOpencodeUpdateStatus(): Promise<void> {
   }
 }
 
+async function extractLocalStorageEntriesFromWebview(): Promise<Record<string, string>> {
+  const webview = webviewRef.value
+  if (!webview) return {}
+
+  try {
+    const result = await webview.executeJavaScript(`(() => {
+      const out = {}
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i)
+        if (!key) continue
+        const value = localStorage.getItem(key)
+        if (typeof value === 'string') {
+          out[key] = value
+        }
+      }
+      return out
+    })()`, true)
+
+    if (!result || typeof result !== 'object') return {}
+    const entries: Record<string, string> = {}
+    for (const [key, value] of Object.entries(result as Record<string, unknown>)) {
+      if (!key.trim()) continue
+      if (typeof value !== 'string') continue
+      entries[key] = value
+    }
+    return entries
+  } catch {
+    return {}
+  }
+}
+
+async function backupProjectState(): Promise<void> {
+  try {
+    const entries = await extractLocalStorageEntriesFromWebview()
+    if (Object.keys(entries).length === 0) return
+    const client = await clientReady
+    await client.projectState.writeProjectState({ entries })
+  } catch {
+  }
+}
+
+async function hasLocalStorageEntriesInWebview(): Promise<boolean> {
+  const webview = webviewRef.value
+  if (!webview) return false
+
+  try {
+    const hasEntries = await webview.executeJavaScript(`(() => {
+      return localStorage.length > 0
+    })()`, true)
+    return hasEntries === true
+  } catch {
+    return false
+  }
+}
+
+async function restoreProjectStateIfNeeded(): Promise<boolean> {
+  if (didAttemptProjectRestore) return false
+  didAttemptProjectRestore = true
+
+  const webview = webviewRef.value
+  if (!webview) return false
+
+  try {
+    const client = await clientReady
+    const result = await client.projectState.readProjectState()
+    const entries = result.state.entries
+    if (!entries || Object.keys(entries).length === 0) return false
+
+    const alreadyPresent = await hasLocalStorageEntriesInWebview()
+    const payload = JSON.stringify(entries)
+
+    if (!alreadyPresent) {
+      const restored = await webview.executeJavaScript(`(() => {
+        const entries = ${payload}
+        for (const [key, value] of Object.entries(entries)) {
+          if (typeof key !== 'string' || !key) continue
+          if (typeof value !== 'string') continue
+          localStorage.setItem(key, value)
+        }
+        return true
+      })()`, true)
+
+      return restored === true
+    }
+
+    const merged = await webview.executeJavaScript(`(() => {
+      const entries = ${payload}
+      let added = 0
+      for (const [key, value] of Object.entries(entries)) {
+        if (typeof key !== 'string' || !key) continue
+        if (typeof value !== 'string') continue
+        if (localStorage.getItem(key) !== null) continue
+        localStorage.setItem(key, value)
+        added += 1
+      }
+      return added > 0
+    })()`, true)
+
+    return merged === true
+  } catch {
+    return false
+  }
+}
+
 function copyTunnelUrl() {
   if (tunnelPublicUrl.value) {
     navigator.clipboard.writeText(tunnelPublicUrl.value)
@@ -192,6 +311,31 @@ function startOpencodeUpdateRefresh() {
   }, 60_000)
 }
 
+function startProjectStateBackup(): void {
+  if (projectStateBackupInterval) return
+  void backupProjectState()
+  projectStateBackupInterval = window.setInterval(() => {
+    void backupProjectState()
+  }, 15_000)
+}
+
+function stopProjectStateBackup(): void {
+  if (projectStateBackupInterval) {
+    clearInterval(projectStateBackupInterval)
+    projectStateBackupInterval = null
+  }
+}
+
+const onDomReady = () => {
+  void (async () => {
+    const restored = await restoreProjectStateIfNeeded()
+    startProjectStateBackup()
+    if (restored && webviewRef.value) {
+      webviewRef.value.reload()
+    }
+  })()
+}
+
 function stopOpencodeUpdateRefresh() {
   if (opencodeUpdateInterval) {
     clearInterval(opencodeUpdateInterval)
@@ -205,6 +349,7 @@ function attachListenersIfNeeded() {
   if (!webview) return
   webview.addEventListener('did-fail-load', onDidFailLoad)
   webview.addEventListener('crashed', onCrashed)
+  webview.addEventListener('dom-ready', onDomReady)
   window.addEventListener('opencode-web-crashed', onProcessCrashed)
   window.addEventListener('cloudflare-tunnel-crashed', onTunnelCrashed)
   listenersAttached = true
@@ -253,13 +398,16 @@ onMounted(async () => {
 onUnmounted(() => {
   const webview = webviewRef.value
   if (webview) {
+    void backupProjectState()
     webview.removeEventListener('did-fail-load', onDidFailLoad)
     webview.removeEventListener('crashed', onCrashed)
+    webview.removeEventListener('dom-ready', onDomReady)
   }
   window.removeEventListener('opencode-web-crashed', onProcessCrashed)
   window.removeEventListener('cloudflare-tunnel-crashed', onTunnelCrashed)
   stopTunnelRefresh()
   stopOpencodeUpdateRefresh()
+  stopProjectStateBackup()
 })
 </script>
 
@@ -307,6 +455,23 @@ onUnmounted(() => {
 .settings-btn:hover {
   background: rgba(53, 43, 41, 0.95);
   color: #f5efea;
+}
+
+.debug-port-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 50px;
+  z-index: 20;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: #d8cbc2;
+  background: rgba(36, 29, 28, 0.92);
+  border: 1px solid rgba(140, 122, 110, 0.35);
+  -webkit-app-region: no-drag;
+  pointer-events: none;
 }
 .error-overlay {
   position: absolute;

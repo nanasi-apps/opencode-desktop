@@ -100,14 +100,14 @@ export async function startOpencodeWeb(): Promise<{ port: number }> {
   const env = await getShellEnv()
   const wrapperSettings = await readWrapperSettings()
   const requestedPort = FIXED_PORT
+  const existingServerIsReachable = await canConnectToLocalPort(FIXED_PORT)
+  if (existingServerIsReachable) {
+    detectedPort = FIXED_PORT
+    currentStatus = 'running'
+    return { port: FIXED_PORT }
+  }
   const isFixedPortAvailable = await isPortAvailable(FIXED_PORT)
   if (!isFixedPortAvailable) {
-    const existingServerIsReachable = await canConnectToLocalPort(FIXED_PORT)
-    if (existingServerIsReachable) {
-      detectedPort = FIXED_PORT
-      currentStatus = 'running'
-      return { port: FIXED_PORT }
-    }
     throw new Error('4096ポートが占有されており、既存のOpenCode Webにも接続できません')
   }
   const shimDir = await ensureOpenShimDir()

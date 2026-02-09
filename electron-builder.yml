@@ -1,5 +1,6 @@
 appId: xyz.nanasi-apps.opencode-desktop
 productName: OpenCode Desktop
+artifactName: OpenCode.Desktop-${arch}.${ext}
 mac:
   category: public.app-category.developer-tools
   target:

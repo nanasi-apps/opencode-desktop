@@ -257,3 +257,142 @@ export async function installOpencode(onProgress?: ProgressReporter): Promise<{ 
   }
   return await installOpencodeViaScript(onProgress)
 }
+
+function parseFirstSemver(raw: string): string | null {
+  const match = raw.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/)
+  return match ? match[0] : null
+}
+
+async function getInstalledOpencodeVersion(): Promise<string | null> {
+  try {
+    const env = await getShellEnv()
+    const { stdout, stderr } = await execFileAsync('opencode', ['--version'], { timeout: 10_000, env })
+    const output = `${stdout}\n${stderr}`
+    return parseFirstSemver(output)
+  } catch {
+    return null
+  }
+}
+
+function compareLooseSemver(current: string, latest: string): number {
+  const toParts = (value: string) => value.split('.')[0] ? value.split(/[.-]/).map((x) => Number.parseInt(x, 10)).map((n) => (Number.isFinite(n) ? n : 0)) : [0]
+  const a = toParts(current)
+  const b = toParts(latest)
+  const max = Math.max(a.length, b.length)
+  for (let i = 0; i < max; i += 1) {
+    const av = a[i] ?? 0
+    const bv = b[i] ?? 0
+    if (av > bv) return 1
+    if (av < bv) return -1
+  }
+  return 0
+}
+
+export interface OpencodeUpdateStatus {
+  supported: boolean
+  installed: boolean
+  currentVersion: string | null
+  latestVersion: string | null
+  updateAvailable: boolean
+  message: string | null
+}
+
+export async function checkOpencodeUpdatesViaBrew(): Promise<OpencodeUpdateStatus> {
+  const brewCommand = await resolveHomebrewCommand()
+  if (!brewCommand) {
+    return {
+      supported: false,
+      installed: await isOpencodeInstalled(),
+      currentVersion: await getInstalledOpencodeVersion(),
+      latestVersion: null,
+      updateAvailable: false,
+      message: 'Homebrew is not available.',
+    }
+  }
+
+  const env = await getShellEnv()
+  let installed = false
+  let currentVersion: string | null = null
+
+  try {
+    const { stdout } = await execFileAsync(brewCommand, ['list', '--versions', 'opencode'], { timeout: 15_000, env })
+    const text = stdout.trim()
+    if (text) {
+      installed = true
+      const parts = text.split(/\s+/)
+      const candidate = parts[parts.length - 1]
+      currentVersion = parseFirstSemver(candidate) ?? candidate
+    }
+  } catch {
+    installed = false
+    currentVersion = await getInstalledOpencodeVersion()
+  }
+
+  let latestVersion: string | null = null
+  let message: string | null = null
+
+  try {
+    const { stdout } = await execFileAsync(brewCommand, ['info', '--json=v2', 'opencode'], { timeout: 20_000, env })
+    const payload = JSON.parse(stdout) as {
+      formulae?: Array<{
+        versions?: { stable?: string }
+        installed?: Array<{ version?: string }>
+      }>
+    }
+    const formula = payload.formulae?.[0]
+    const latestVersionRaw = formula?.versions?.stable
+    latestVersion = typeof latestVersionRaw === 'string' ? parseFirstSemver(latestVersionRaw) ?? latestVersionRaw : null
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error)
+  }
+
+  let updateAvailable = false
+  if (installed) {
+    try {
+      const { stdout } = await execFileAsync(brewCommand, ['outdated', '--json=v2', 'opencode'], { timeout: 20_000, env })
+      const payload = JSON.parse(stdout) as { formulae?: Array<{ name?: string }> }
+      updateAvailable = Array.isArray(payload.formulae) && payload.formulae.some((item) => item.name === 'opencode')
+    } catch {
+      if (currentVersion && latestVersion) {
+        updateAvailable = compareLooseSemver(currentVersion, latestVersion) < 0
+      }
+    }
+  }
+
+  return {
+    supported: true,
+    installed,
+    currentVersion,
+    latestVersion,
+    updateAvailable,
+    message,
+  }
+}
+
+export async function upgradeOpencodeViaBrew(onProgress?: ProgressReporter): Promise<{ success: boolean; output: string }> {
+  const brewCommand = await resolveHomebrewCommand()
+  if (!brewCommand) {
+    return { success: false, output: 'Homebrew is not available in PATH.' }
+  }
+
+  const env = await getShellEnv()
+
+  try {
+    const updateResult = await runCommandWithStreaming(
+      brewCommand,
+      ['update'],
+      { env, timeout: 180_000, onProgress },
+    )
+    const upgradeResult = await runCommandWithStreaming(
+      brewCommand,
+      ['upgrade', 'opencode'],
+      { env, timeout: 300_000, onProgress },
+    )
+    const version = await getInstalledOpencodeVersion()
+    const suffix = version ? `\n\nopencode version: ${version}` : ''
+    return { success: true, output: `${updateResult.output}\n${upgradeResult.output}${suffix}` }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, output: message }
+  }
+}

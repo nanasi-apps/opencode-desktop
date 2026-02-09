@@ -23,6 +23,12 @@
     </div>
     <button class="settings-btn" @click="openSettings" :title="t('main.settings')">
       <IconSettings :size="16" />
+      <span
+        v-if="opencodeUpdateAvailable"
+        class="settings-update-dot"
+        :title="t('main.opencodeUpdateAvailable')"
+        aria-hidden="true"
+      ></span>
     </button>
     <div v-if="manualStartRequired && !webUrl && !loadError" class="manual-start-overlay">
       <div class="manual-start-content">
@@ -62,6 +68,8 @@ const tunnelPublicUrl = ref<string | null>(null)
 const tunnelError = ref<string | null>(null)
 let listenersAttached = false
 let tunnelRefreshInterval: number | null = null
+let opencodeUpdateInterval: number | null = null
+const opencodeUpdateAvailable = ref(false)
 
 const webUrl = computed(() => {
   if (!webPort.value) return null
@@ -145,6 +153,16 @@ async function refreshTunnelStatus(): Promise<void> {
   }
 }
 
+async function refreshOpencodeUpdateStatus(): Promise<void> {
+  try {
+    const client = await clientReady
+    const result = await client.update.checkOpencodeUpdates()
+    opencodeUpdateAvailable.value = result.updateAvailable
+  } catch {
+    opencodeUpdateAvailable.value = false
+  }
+}
+
 function copyTunnelUrl() {
   if (tunnelPublicUrl.value) {
     navigator.clipboard.writeText(tunnelPublicUrl.value)
@@ -163,6 +181,21 @@ function stopTunnelRefresh() {
   if (tunnelRefreshInterval) {
     clearInterval(tunnelRefreshInterval)
     tunnelRefreshInterval = null
+  }
+}
+
+function startOpencodeUpdateRefresh() {
+  if (opencodeUpdateInterval) return
+  void refreshOpencodeUpdateStatus()
+  opencodeUpdateInterval = window.setInterval(() => {
+    void refreshOpencodeUpdateStatus()
+  }, 60_000)
+}
+
+function stopOpencodeUpdateRefresh() {
+  if (opencodeUpdateInterval) {
+    clearInterval(opencodeUpdateInterval)
+    opencodeUpdateInterval = null
   }
 }
 
@@ -211,6 +244,7 @@ onMounted(async () => {
     await syncAutoStartPreference()
     await ensureWebPort()
     startTunnelRefresh()
+    startOpencodeUpdateRefresh()
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err)
   }
@@ -225,6 +259,7 @@ onUnmounted(() => {
   window.removeEventListener('opencode-web-crashed', onProcessCrashed)
   window.removeEventListener('cloudflare-tunnel-crashed', onTunnelCrashed)
   stopTunnelRefresh()
+  stopOpencodeUpdateRefresh()
 })
 </script>
 
@@ -257,6 +292,17 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   -webkit-app-region: no-drag;
+}
+
+.settings-update-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 1px rgba(19, 16, 16, 0.85);
 }
 .settings-btn:hover {
   background: rgba(53, 43, 41, 0.95);

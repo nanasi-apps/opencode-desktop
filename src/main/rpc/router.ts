@@ -19,6 +19,7 @@ import { readOmoConfig, writeOmoConfig, getOmoConfigPath } from './procedures/om
 import { getSetupState, recordSetupSuccess } from './procedures/setup.js'
 import { readSettings, writeSettings, getSettingsPath as getWrapperSettingsPath } from './procedures/wrapper.js'
 import { startTunnel, stopTunnel, getTunnelStatus, getTunnelSettings, onTunnelCrashEvent } from './procedures/tunnel.js'
+import { checkForUpdates, checkOpencodeUpdates, upgradeOpencode } from './procedures/update.js'
 
 export const router = os.router({
   installer: os.router({
@@ -73,6 +74,11 @@ export const router = os.router({
     getTunnelStatus,
     getTunnelSettings,
     onTunnelCrashEvent,
+  }),
+  update: os.router({
+    checkForUpdates,
+    checkOpencodeUpdates,
+    upgradeOpencode,
   }),
 })
 

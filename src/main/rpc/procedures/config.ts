@@ -5,6 +5,7 @@ import {
   writeConfig as writeConfigService,
   getConfigPath as getConfigPathService,
 } from '../../services/config-manager.js'
+import { listOpencodeModels } from '../../services/opencode-models.js'
 import {
   getStatus as getWebProcessStatus,
   startOpencodeWeb,
@@ -63,4 +64,8 @@ export const writeConfig = os
 
 export const getConfigPath = os.handler(async () => {
   return { path: await getConfigPathService() }
+})
+
+export const getAvailableModels = os.handler(async () => {
+  return { models: await listOpencodeModels() }
 })

@@ -14,7 +14,7 @@ import {
 } from './procedures/installer.js'
 import { startWeb, stopWeb, getProcessStatus } from './procedures/process.js'
 import { getOverallStatus } from './procedures/status.js'
-import { readConfig, writeConfig, getConfigPath } from './procedures/config.js'
+import { readConfig, writeConfig, getConfigPath, getAvailableModels } from './procedures/config.js'
 import { readOmoConfig, writeOmoConfig, getOmoConfigPath } from './procedures/omo-config.js'
 import { getSetupState, recordSetupSuccess } from './procedures/setup.js'
 import { readSettings, writeSettings, getSettingsPath as getWrapperSettingsPath } from './procedures/wrapper.js'
@@ -46,6 +46,7 @@ export const router = os.router({
     readConfig,
     writeConfig,
     getConfigPath,
+    getAvailableModels,
   }),
   omoConfig: os.router({
     readConfig: readOmoConfig,

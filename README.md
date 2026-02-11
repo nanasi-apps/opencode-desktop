@@ -21,7 +21,18 @@ No CLI wrestling. No setup maze. Just open and code. 💫
 - 🌐 Optional Cloudflare Tunnel for remote access
 - 🧷 Tray/menu-bar mode for always-ready workflow
 
-## ⏱️ 60-Second Start
+## ⏱️ Install (Recommended: Homebrew)
+
+### ✅ Homebrew (recommended)
+
+```bash
+brew tap nanasi-apps/tap
+brew install --cask nanasi-apps/tap/opencode-desktop
+```
+
+After install, launch `OpenCode Desktop` from Applications.
+
+### 📦 DMG (alternative)
 
 1. Open this repo's **Releases** page.
 2. Download the latest `.dmg`.

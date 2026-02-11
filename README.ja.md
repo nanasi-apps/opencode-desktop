@@ -21,7 +21,18 @@ CLI の細かいセットアップに悩まず、すぐに使い始められま�
 - 🌐 必要に応じて Cloudflare Tunnel で外部アクセス
 - 🧷 トレイ（メニューバー）常駐で、いつでも再開
 
-## ⏱️ 60秒スタート
+## ⏱️ インストール（おすすめ: Homebrew）
+
+### ✅ Homebrew（おすすめ）
+
+```bash
+brew tap nanasi-apps/tap
+brew install --cask nanasi-apps/tap/opencode-desktop
+```
+
+インストール後、`Applications` から `OpenCode Desktop` を起動してください。
+
+### 📦 DMG（代替）
 
 1. このリポジトリの **Releases** を開く
 2. 最新の `.dmg` をダウンロード

@@ -67,6 +67,13 @@ jobs:
             exit 1
           fi
           echo "path=${DMGS[0]}" >> "$GITHUB_OUTPUT"
+          echo "filename=$(basename "${DMGS[0]}")" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate dmg sha256
+        id: dmg_sha
+        run: |
+          SHA256="$(shasum -a 256 "${{ steps.dmg.outputs.path }}" | awk '{print $1}')"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release and upload dmg
         env:
@@ -76,3 +83,43 @@ jobs:
             "${{ steps.dmg.outputs.path }}" \
             --title "${{ steps.version.outputs.tag }}" \
             --notes "Automated release for version ${{ steps.version.outputs.version }}"
+
+      - name: Update Homebrew tap cask
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          if [ -z "${TAP_GITHUB_TOKEN}" ]; then
+            echo "TAP_GITHUB_TOKEN is not set. Add it as an Actions secret with write access to nanasi-apps/homebrew-tap."
+            exit 1
+          fi
+
+          TAP_REPO="nanasi-apps/homebrew-tap"
+          CASK_PATH="Casks/opencode-desktop.rb"
+          TMP_DIR="$(mktemp -d)"
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/${TAP_REPO}.git" "${TMP_DIR}"
+          mkdir -p "${TMP_DIR}/Casks"
+
+          cat > "${TMP_DIR}/${CASK_PATH}" <<EOF
+          cask "opencode-desktop" do
+            version "${{ steps.version.outputs.version }}"
+            sha256 "${{ steps.dmg_sha.outputs.sha256 }}"
+
+            url "https://github.com/${{ github.repository }}/releases/download/v#{version}/${{ steps.dmg.outputs.filename }}"
+            name "OpenCode Desktop"
+            desc "Zero-fuss gateway to OpenCode Web on macOS"
+            homepage "https://github.com/${{ github.repository }}"
+
+            app "OpenCode Desktop.app"
+          end
+          EOF
+
+          if git -C "${TMP_DIR}" diff --quiet -- "${CASK_PATH}"; then
+            echo "Homebrew cask already up to date."
+            exit 0
+          fi
+
+          git -C "${TMP_DIR}" add "${CASK_PATH}"
+          git -C "${TMP_DIR}" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m "opencode-desktop ${{ steps.version.outputs.version }}"
+          git -C "${TMP_DIR}" push origin HEAD:main

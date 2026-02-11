@@ -4,7 +4,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> macOS で OpenCode Web をサクッと始めるための、キラッと使いやすいデスクトップアプリ。🚀
+> macOS で OpenCode Web をサクッと始めるための、使いやすいデスクトップアプリ。🚀
 
 ![macOS](https://img.shields.io/badge/macOS-supported-111827?style=for-the-badge&logo=apple)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron-1f2937?style=for-the-badge&logo=electron)

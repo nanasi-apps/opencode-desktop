@@ -4,7 +4,7 @@
 
 [English](README.md) | [日本語](README.ja.md)
 
-> Your shiny, zero-fuss gateway to OpenCode Web on macOS. 🚀
+> zero-fuss gateway to OpenCode Web on macOS. 🚀
 
 ![macOS](https://img.shields.io/badge/macOS-supported-111827?style=for-the-badge&logo=apple)
 ![Desktop](https://img.shields.io/badge/Desktop-Electron-1f2937?style=for-the-badge&logo=electron)

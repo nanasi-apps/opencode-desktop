@@ -94,14 +94,14 @@ jobs:
           fi
 
           TAP_REPO="nanasi-apps/homebrew-tap"
-          CASK_PATH="Casks/opencode-desktop.rb"
+          CASK_PATH="Casks/opencode-desktop-unofficial.rb"
           TMP_DIR="$(mktemp -d)"
 
           git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/${TAP_REPO}.git" "${TMP_DIR}"
           mkdir -p "${TMP_DIR}/Casks"
 
           cat > "${TMP_DIR}/${CASK_PATH}" <<EOF
-          cask "opencode-desktop" do
+          cask "opencode-desktop-unofficial" do
             version "${{ steps.version.outputs.version }}"
             sha256 "${{ steps.dmg_sha.outputs.sha256 }}"
 
@@ -122,5 +122,5 @@ jobs:
           fi
 
           git -C "${TMP_DIR}" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m "opencode-desktop ${{ steps.version.outputs.version }}"
+            commit -m "opencode-desktop-unofficial ${{ steps.version.outputs.version }}"
           git -C "${TMP_DIR}" push origin HEAD:main

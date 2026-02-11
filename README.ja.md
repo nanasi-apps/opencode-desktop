@@ -27,7 +27,7 @@ CLI の細かいセットアップに悩まず、すぐに使い始められま�
 
 ```bash
 brew tap nanasi-apps/tap
-brew install --cask nanasi-apps/tap/opencode-desktop
+brew install --cask nanasi-apps/tap/opencode-desktop-unofficial
 ```
 
 インストール後、`Applications` から `OpenCode Desktop` を起動してください。

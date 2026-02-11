@@ -12,3 +12,8 @@ ipcRenderer.on('orpc-port', async (event) => {
 ipcRenderer.on('opencode-web-crashed', () => {
   window.dispatchEvent(new CustomEvent('opencode-web-crashed'))
 })
+
+window.addEventListener('opencode-native-notification', (event: Event) => {
+  const customEvent = event as CustomEvent<unknown>
+  void ipcRenderer.invoke('show-native-notification', customEvent.detail)
+})

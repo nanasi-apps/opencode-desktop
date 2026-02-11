@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MessageChannelMain, Tray, nativeImage, shell, type MessagePortMain } from 'electron'
+import { app, BrowserWindow, Menu, MessageChannelMain, Notification, Tray, ipcMain, nativeImage, shell, type MessagePortMain } from 'electron'
 import { RPCHandler } from '@orpc/server/message-port'
 import { onError } from '@orpc/server'
 import { router } from './rpc/router.js'
@@ -6,6 +6,7 @@ import { startOpencodeWeb, onProcessCrash } from './services/opencode-process.js
 import { onTunnelCrash } from './services/cloudflare-tunnel-process.js'
 import { applyLoginItemSettings, readWrapperSettings } from './services/wrapper-settings.js'
 import { ensureServiceRunning, getServiceStatus } from './services/launchd-service.js'
+import { startUpdateNotifier } from './services/update-notifier.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -51,6 +52,33 @@ function openInDefaultBrowserIfExternal(rawUrl: string): boolean {
 
 const TRAY_ICON_DATA_URL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5WwKQAAAAASUVORK5CYII='
+
+ipcMain.handle('show-native-notification', (_event, payload: unknown) => {
+  if (!Notification.isSupported()) return
+  if (typeof payload !== 'object' || payload === null) return
+
+  const data = payload as {
+    title?: unknown
+    body?: unknown
+    subtitle?: unknown
+    silent?: unknown
+  }
+
+  const title = typeof data.title === 'string' && data.title.trim().length > 0
+    ? data.title
+    : 'OpenCode'
+  const body = typeof data.body === 'string' ? data.body : ''
+  const subtitle = typeof data.subtitle === 'string' ? data.subtitle : undefined
+  const silent = data.silent === true
+
+  const notification = new Notification({
+    title,
+    body,
+    subtitle,
+    silent,
+  })
+  notification.show()
+})
 
 function setupOrpcChannel(win: BrowserWindow) {
   const { port1, port2 } = new MessageChannelMain()
@@ -212,6 +240,7 @@ app.whenReady().then(() => {
   mainWindow = createWindow()
   setupTray()
   void applyWrapperStartupSettings()
+  startUpdateNotifier()
   attachCrashEvents(mainWindow)
 
   app.on('web-contents-created', (_event, contents) => {

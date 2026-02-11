@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, rm, writeFile, access } from 'node:fs/promises'
+import { mkdir, rm, writeFile, access, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
@@ -92,7 +92,7 @@ function buildProgramArgs(opencodePath: string, settings: WrapperSettings, port:
   return args
 }
 
-function buildPlistXml(programArgs: string[], settings: WrapperSettings): string {
+function buildPlistXml(programArgs: string[], settings: WrapperSettings, shellEnv: NodeJS.ProcessEnv): string {
   const stdoutPath = path.join(LOG_DIR, 'stdout.log')
   const stderrPath = path.join(LOG_DIR, 'stderr.log')
   const envEntries: string[] = ['BROWSER', 'none']
@@ -102,6 +102,9 @@ function buildPlistXml(programArgs: string[], settings: WrapperSettings): string
   }
   if (settings.web.password) {
     envEntries.push('OPENCODE_SERVER_PASSWORD', settings.web.password)
+  }
+  if (shellEnv.PATH) {
+    envEntries.push('PATH', shellEnv.PATH)
   }
 
   const envXml: string[] = []
@@ -148,6 +151,24 @@ async function launchctl(args: string[], allowFailure = false): Promise<{ stdout
   }
 }
 
+async function needsBrowserSuppressionMigration(): Promise<boolean> {
+  try {
+    const plist = await readFile(PLIST_PATH, 'utf-8')
+    return !(plist.includes('<key>BROWSER</key>') && plist.includes('<string>none</string>'))
+  } catch {
+    return false
+  }
+}
+
+async function needsPathMigration(): Promise<boolean> {
+  try {
+    const plist = await readFile(PLIST_PATH, 'utf-8')
+    return !plist.includes('<key>PATH</key>')
+  } catch {
+    return false
+  }
+}
+
 export type LaunchdServiceStatus = 'running' | 'stopped' | 'not_installed'
 
 export async function getServiceStatus(): Promise<LaunchdServiceStatus> {
@@ -173,7 +194,8 @@ export async function installService(settings: WrapperSettings): Promise<void> {
   const opencodePath = await resolveOpencodePath()
   const port = await getServicePort(settings)
   const programArgs = buildProgramArgs(opencodePath, settings, port)
-  const plistXml = buildPlistXml(programArgs, settings)
+  const shellEnv = await getShellEnv()
+  const plistXml = buildPlistXml(programArgs, settings, shellEnv)
 
   await mkdir(LAUNCH_AGENTS_DIR, { recursive: true })
   await mkdir(LOG_DIR, { recursive: true })
@@ -220,6 +242,11 @@ export async function ensureServiceRunning(settings: WrapperSettings): Promise<{
 
   if (status === 'not_installed') {
     await installService(settings)
+    return { port }
+  }
+
+  if (await needsBrowserSuppressionMigration() || await needsPathMigration()) {
+    await reinstallService(settings)
     return { port }
   }
 

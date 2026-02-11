@@ -75,6 +75,7 @@ let opencodeUpdateInterval: number | null = null
 let projectStateBackupInterval: number | null = null
 let didAttemptProjectRestore = false
 const opencodeUpdateAvailable = ref(false)
+const NATIVE_NOTIFICATION_CONSOLE_PREFIX = '__OPENCODE_NATIVE_NOTIFICATION__:'
 
 const webUrl = computed(() => {
   if (!webPort.value) return null
@@ -141,6 +142,18 @@ async function ensureWebPort(forceStart = false): Promise<void> {
 const onDidFailLoad = (event: any) => {
   if (event.errorCode === -3) return
   loadError.value = t('main.errors.failedToLoadWeb', { error: event.errorDescription })
+}
+
+const onConsoleMessage = (event: any) => {
+  if (!event || typeof event.message !== 'string') return
+  if (!event.message.startsWith(NATIVE_NOTIFICATION_CONSOLE_PREFIX)) return
+
+  const payloadJson = event.message.slice(NATIVE_NOTIFICATION_CONSOLE_PREFIX.length)
+  try {
+    const payload = JSON.parse(payloadJson)
+    window.dispatchEvent(new CustomEvent('opencode-native-notification', { detail: payload }))
+  } catch {
+  }
 }
 
 const onCrashed = () => {
@@ -328,6 +341,57 @@ function stopProjectStateBackup(): void {
 
 const onDomReady = () => {
   void (async () => {
+    const webview = webviewRef.value
+    if (webview) {
+      await webview.executeJavaScript(`(() => {
+        const PREFIX = '${NATIVE_NOTIFICATION_CONSOLE_PREFIX}'
+        const global = window
+        if (global.__opencodeNativeNotificationPatched === true) return
+        global.__opencodeNativeNotificationPatched = true
+
+        class NativeNotification {
+          static permission = 'granted'
+
+          static requestPermission() {
+            return Promise.resolve('granted')
+          }
+
+          constructor(title, options = {}) {
+            const payload = {
+              title: typeof title === 'string' ? title : '',
+              body: typeof options.body === 'string' ? options.body : '',
+              subtitle: typeof options.tag === 'string' ? options.tag : '',
+              silent: options.silent === true,
+            }
+
+            try {
+              console.log(PREFIX + JSON.stringify(payload))
+            } catch {
+            }
+          }
+
+          close() {
+          }
+
+          addEventListener() {
+          }
+
+          removeEventListener() {
+          }
+
+          dispatchEvent() {
+            return true
+          }
+        }
+
+        Object.defineProperty(global, 'Notification', {
+          configurable: true,
+          writable: true,
+          value: NativeNotification,
+        })
+      })()`, true)
+    }
+
     const restored = await restoreProjectStateIfNeeded()
     startProjectStateBackup()
     if (restored && webviewRef.value) {
@@ -350,6 +414,7 @@ function attachListenersIfNeeded() {
   webview.addEventListener('did-fail-load', onDidFailLoad)
   webview.addEventListener('crashed', onCrashed)
   webview.addEventListener('dom-ready', onDomReady)
+  webview.addEventListener('console-message', onConsoleMessage)
   window.addEventListener('opencode-web-crashed', onProcessCrashed)
   window.addEventListener('cloudflare-tunnel-crashed', onTunnelCrashed)
   listenersAttached = true
@@ -402,6 +467,7 @@ onUnmounted(() => {
     webview.removeEventListener('did-fail-load', onDidFailLoad)
     webview.removeEventListener('crashed', onCrashed)
     webview.removeEventListener('dom-ready', onDomReady)
+    webview.removeEventListener('console-message', onConsoleMessage)
   }
   window.removeEventListener('opencode-web-crashed', onProcessCrashed)
   window.removeEventListener('cloudflare-tunnel-crashed', onTunnelCrashed)

@@ -74,6 +74,12 @@ Security tip: enabling tunnel without auth can expose your endpoint publicly. �
 - It is likely in tray/menu-bar mode
 - Use tray icon -> `Show OpenCode Desktop`
 
+### macOS says the app cannot be opened for security reasons
+- Open `System Settings > Privacy & Security`
+- In the Security section, click `Open Anyway` for OpenCode Desktop
+- Reopen the app and click `Open` when prompted
+- See video guide: [`privacyandsecurity-approve.mp4`](privacyandsecurity-approve.mp4)
+
 ## 🗂️ Config Files
 
 - `~/.config/opencode/opencode.json` (or `.jsonc`)

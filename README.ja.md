@@ -74,6 +74,12 @@ CLI の細かいセットアップに悩まず、すぐに使い始められま�
 - トレイ常駐している可能性があります
 - トレイアイコン -> `Show OpenCode Desktop` を選択
 
+### macOS のセキュリティ警告で開けない
+- `System Settings > Privacy & Security` を開く
+- セキュリティ欄で OpenCode Desktop の `Open Anyway` をクリック
+- もう一度アプリを開き、確認ダイアログで `Open` を選択
+- 動画ガイド: [`privacyandsecurity-approve.mp4`](privacyandsecurity-approve.mp4)
+
 ## 🗂️ 設定ファイル保存先
 
 - `~/.config/opencode/opencode.json`（または `.jsonc`）

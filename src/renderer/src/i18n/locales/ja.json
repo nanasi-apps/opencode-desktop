@@ -126,7 +126,13 @@
       "starting": "トンネル起動中...",
       "active": "トンネル有効: {url}",
       "error": "トンネルエラー: {error}",
-      "unknownError": "不明なエラー"
+      "unknownError": "不明なエラー",
+      "errorDialog": {
+        "title": "Cloudflare Tunnel エラー",
+        "description": "トンネルでエラーが発生しました。詳細を確認して、必要に応じて設定を見直してください。",
+        "close": "閉じる",
+        "openSettings": "設定を開く"
+      }
     },
     "errors": {
       "failedToLoadWeb": "OpenCode Web の読み込みに失敗しました ({error})",

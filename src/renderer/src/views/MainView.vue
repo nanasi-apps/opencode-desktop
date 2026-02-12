@@ -17,10 +17,36 @@
       <span v-else-if="tunnelStatus === 'running' && tunnelPublicUrl" class="tunnel-status tunnel-running" :title="t('main.tunnel.active', { url: tunnelPublicUrl })" @click="copyTunnelUrl">
         <IconWorld :size="16" />
       </span>
-      <span v-else-if="tunnelStatus === 'error' || tunnelError" class="tunnel-status tunnel-error" :title="t('main.tunnel.error', { error: tunnelError || t('main.tunnel.unknownError') })">
+      <span
+        v-else-if="tunnelStatus === 'error' || tunnelError"
+        class="tunnel-status tunnel-error"
+        :title="t('main.tunnel.error', { error: tunnelError || t('main.tunnel.unknownError') })"
+        @click="openTunnelErrorDialog"
+      >
         <IconAlertTriangle :size="16" />
       </span>
     </div>
+    <dialog
+      v-if="showTunnelErrorDialog"
+      ref="tunnelErrorDialogRef"
+      class="tunnel-error-dialog"
+      @cancel.prevent="closeTunnelErrorDialog"
+      @click="onTunnelErrorDialogClick"
+    >
+      <div class="tunnel-error-dialog-content">
+        <h2>{{ t('main.tunnel.errorDialog.title') }}</h2>
+        <p>{{ t('main.tunnel.errorDialog.description') }}</p>
+        <pre>{{ tunnelErrorDialogMessage }}</pre>
+        <div class="tunnel-error-dialog-actions">
+          <button class="btn btn-secondary" type="button" @click="closeTunnelErrorDialog">
+            {{ t('main.tunnel.errorDialog.close') }}
+          </button>
+          <button class="btn" type="button" @click="openSettingsFromTunnelErrorDialog">
+            {{ t('main.tunnel.errorDialog.openSettings') }}
+          </button>
+        </div>
+      </div>
+    </dialog>
     <button class="settings-btn" @click="openSettings" :title="t('main.settings')">
       <IconSettings :size="16" />
       <span
@@ -69,6 +95,8 @@ const manualStartRequired = ref(false)
 const tunnelStatus = ref<TunnelStatus>('stopped')
 const tunnelPublicUrl = ref<string | null>(null)
 const tunnelError = ref<string | null>(null)
+const showTunnelErrorDialog = ref(false)
+const tunnelErrorDialogRef = ref<HTMLDialogElement | null>(null)
 let listenersAttached = false
 let tunnelRefreshInterval: number | null = null
 let opencodeUpdateInterval: number | null = null
@@ -90,6 +118,10 @@ const showDebugPortBadge = computed(() => {
 
 const currentDisplayedPort = computed(() => {
   return webPort.value ?? getRoutePort()
+})
+
+const tunnelErrorDialogMessage = computed(() => {
+  return tunnelError.value || t('main.tunnel.unknownError')
 })
 
 function getRoutePort(): number | null {
@@ -299,6 +331,44 @@ function copyTunnelUrl() {
   if (tunnelPublicUrl.value) {
     navigator.clipboard.writeText(tunnelPublicUrl.value)
   }
+}
+
+async function openTunnelErrorDialog() {
+  if (tunnelStatus.value !== 'error' && !tunnelError.value) return
+  showTunnelErrorDialog.value = true
+  await nextTick()
+  const dialog = tunnelErrorDialogRef.value
+  if (!dialog || dialog.open) return
+  dialog.showModal()
+}
+
+function closeTunnelErrorDialog() {
+  showTunnelErrorDialog.value = false
+  const dialog = tunnelErrorDialogRef.value
+  if (dialog?.open) {
+    dialog.close()
+  }
+}
+
+function onTunnelErrorDialogClick(event: MouseEvent) {
+  const dialog = tunnelErrorDialogRef.value
+  if (!dialog) return
+  const rect = dialog.getBoundingClientRect()
+  const target = event.target as Element | null
+  if (!target || target !== dialog) return
+  const clickedInside =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom
+  if (!clickedInside) {
+    closeTunnelErrorDialog()
+  }
+}
+
+function openSettingsFromTunnelErrorDialog() {
+  closeTunnelErrorDialog()
+  openSettings()
 }
 
 function startTunnelRefresh() {
@@ -652,5 +722,54 @@ onUnmounted(() => {
 }
 .tunnel-error {
   background: rgba(239, 68, 68, 0.2);
+}
+
+.tunnel-error-dialog {
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid rgba(138, 123, 114, 0.4);
+  border-radius: 12px;
+  background: #1f1817;
+  color: #f5efea;
+  padding: 0;
+}
+
+.tunnel-error-dialog::backdrop {
+  background: rgba(10, 8, 8, 0.6);
+}
+
+.tunnel-error-dialog-content {
+  padding: 18px;
+}
+
+.tunnel-error-dialog-content h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.tunnel-error-dialog-content p {
+  margin: 10px 0 12px;
+  font-size: 13px;
+  color: #c7b7ad;
+}
+
+.tunnel-error-dialog-content pre {
+  margin: 0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(138, 123, 114, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: #f8f2ee;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tunnel-error-dialog-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

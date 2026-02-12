@@ -126,7 +126,13 @@
       "starting": "Tunnel starting...",
       "active": "Tunnel active: {url}",
       "error": "Tunnel error: {error}",
-      "unknownError": "Unknown error"
+      "unknownError": "Unknown error",
+      "errorDialog": {
+        "title": "Cloudflare Tunnel Error",
+        "description": "The tunnel reported an error. Check details below and update your tunnel settings if needed.",
+        "close": "Close",
+        "openSettings": "Open Settings"
+      }
     },
     "errors": {
       "failedToLoadWeb": "Failed to load OpenCode Web ({error})",

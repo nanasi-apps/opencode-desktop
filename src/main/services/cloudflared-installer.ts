@@ -5,6 +5,11 @@ import { isHomebrewInstalled, resolveHomebrewCommand } from './opencode-installe
 
 const execFileAsync = promisify(execFile)
 
+export interface ExternalTunnelInfo {
+  isRunningExternally: boolean
+  serviceName?: string
+}
+
 export async function isCloudflaredInstalled(): Promise<boolean> {
   try {
     const env = await getShellEnv()
@@ -57,5 +62,40 @@ export async function installCloudflared(): Promise<{ success: boolean; output: 
       success: false,
       output: 'Homebrew is required to install cloudflared. Please install Homebrew first.',
     }
+  }
+}
+
+export async function checkExternalCloudflaredService(): Promise<ExternalTunnelInfo> {
+  try {
+    const env = await getShellEnv()
+    const { stdout } = await execFileAsync('launchctl', ['list'], { env })
+    const lines = stdout.split('\n')
+    for (const line of lines) {
+      if (line.includes('cloudflared') && !line.includes('opencode')) {
+        const parts = line.trim().split(/\s+/)
+        const serviceName = parts[parts.length - 1]
+        return {
+          isRunningExternally: true,
+          serviceName: serviceName
+        }
+      }
+    }
+    try {
+      const { stdout: psOutput } = await execFileAsync('ps', ['aux'], { env })
+      const psLines = psOutput.split('\n')
+      for (const line of psLines) {
+        if (line.includes('cloudflared') &&
+            (line.includes('tunnel run') || line.includes('service')) &&
+            !line.includes('opencode-desktop')) {
+          return {
+            isRunningExternally: true,
+            serviceName: 'cloudflared'
+          }
+        }
+      }
+    } catch {}
+    return { isRunningExternally: false }
+  } catch {
+    return { isRunningExternally: false }
   }
 }

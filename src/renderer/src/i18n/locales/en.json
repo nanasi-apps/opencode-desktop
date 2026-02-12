@@ -188,7 +188,9 @@
     },
     "messages": {
       "saved": "Saved",
+      "savedAndRestarted": "Saved (OpenCode restarted)",
       "saveFailed": "Save failed",
+      "saveWillRestartConfirm": "Saving these changes will restart OpenCode. Continue?",
       "restartingOpencode": "Restarting OpenCode...",
       "cloudflaredInstalled": "cloudflared installed",
       "failedToInstallCloudflared": "Failed to install cloudflared",
@@ -544,6 +546,11 @@
       "label": "Quick Tunnel Host",
       "waitingForHost": "Waiting for host from cloudflared...",
       "hostWillAppear": "Host will appear here after tunnel starts."
+    },
+    "externalRunning": {
+      "message": "Cloudflare Tunnel is already configured on your system",
+      "help": "An existing Cloudflare Tunnel configuration was detected. Please manage your tunnel settings from the Cloudflare dashboard.",
+      "link": "Manage settings at one.dash.cloudflare.com"
     }
   },
   "omo": {

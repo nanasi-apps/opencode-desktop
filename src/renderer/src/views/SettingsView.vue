@@ -233,6 +233,7 @@
               :tunnel-runtime-status="tunnelRuntimeStatus"
               :quick-tunnel-url="quickTunnelUrl"
               :tunnel-runtime-error="tunnelRuntimeError"
+              :external-tunnel-running="externalTunnelRunning"
               @update:tunnel-enabled="wrapper.setTunnelEnabled"
               @update:tunnel-mode="wrapper.setTunnelMode"
               @update:tunnel-token="wrapper.setTunnelToken"
@@ -332,6 +333,7 @@ const cloudflaredVersion = ref('')
 const tunnelRuntimeStatus = ref<'stopped' | 'starting' | 'running' | 'error'>('stopped')
 const quickTunnelUrl = ref('')
 const tunnelRuntimeError = ref('')
+const externalTunnelRunning = ref(false)
 const availableModels = ref<string[]>([])
 const launchdStatus = ref<'running' | 'stopped' | 'not_installed'>('not_installed')
 const launchdBusy = ref(false)
@@ -892,6 +894,16 @@ async function checkCloudflaredInstall() {
   }
 }
 
+async function checkExternalTunnel() {
+  try {
+    const client = await clientReady
+    const result = await client.tunnel.getExternalTunnelStatus()
+    externalTunnelRunning.value = result.isRunningExternally
+  } catch {
+    externalTunnelRunning.value = false
+  }
+}
+
 async function installCloudflared() {
   cloudflaredInstalling.value = true
   saveMessage.value = ''
@@ -1069,10 +1081,16 @@ async function save() {
     const nextWrapperSettings = wrapper.getSettingsForSave()
     const nextOmoConfig = omo.getConfigForSave()
     const hasMcpChange = !areValuesEqual(loadedOpencodeConfig.mcp, nextOpencodeConfig.mcp)
+    let willRestartOpencode = false
 
     if (hasMcpChange) {
       const processStatus = await client.process.getProcessStatus()
       if (processStatus.status === 'running') {
+        const confirmed = window.confirm(t('settings.messages.saveWillRestartConfirm'))
+        if (!confirmed) return
+
+        willRestartOpencode = true
+        restarting.value = true
         saveMessage.value = t('settings.messages.restartingOpencode')
         saveMessageType.value = 'success'
       }
@@ -1114,6 +1132,8 @@ async function save() {
       saveMessage.value = t('settings.messages.savedWithWeb', { web: webSaveWarning })
     } else if (tunnelSaveWarning) {
       saveMessage.value = t('settings.messages.savedWithTunnel', { tunnel: tunnelSaveWarning })
+    } else if (willRestartOpencode) {
+      saveMessage.value = t('settings.messages.savedAndRestarted')
     } else {
       saveMessage.value = t('settings.messages.saved')
     }
@@ -1126,6 +1146,7 @@ async function save() {
     saveMessageType.value = 'error'
   } finally {
     saving.value = false
+    restarting.value = false
     setTimeout(() => {
       saveMessage.value = ''
     }, 3000)
@@ -1145,6 +1166,7 @@ async function loadAvailableModels() {
 onMounted(async () => {
   void loadAvailableModels()
   void checkCloudflaredInstall()
+  void checkExternalTunnel()
   void refreshLaunchdStatus()
   void checkDesktopUpdates()
   void checkOpencodeUpdates()

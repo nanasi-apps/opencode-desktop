@@ -16,12 +16,22 @@
       </button>
       <span v-if="cloudflaredInstalling" class="status-checking">{{ t('tunnel.cloudflared.installing') }}</span>
     </div>
+
+    <div v-if="externalTunnelRunning" class="external-tunnel-notice">
+      <p class="external-tunnel-message">{{ t('tunnel.externalRunning.message') }}</p>
+      <p class="external-tunnel-help">{{ t('tunnel.externalRunning.help') }}</p>
+      <a href="https://one.dash.cloudflare.com" target="_blank" rel="noopener noreferrer" class="external-tunnel-link">
+        {{ t('tunnel.externalRunning.link') }}
+      </a>
+    </div>
+
     <SettingsField
       :label="t('tunnel.enabled.label')"
       type="checkbox"
       :model-value="tunnelEnabled"
       @update:model-value="$emit('update:tunnelEnabled', Boolean($event))"
       :help="t('tunnel.enabled.help')"
+      :disabled="externalTunnelRunning"
     />
 
     <div v-if="tunnelEnabled" class="warning-box">
@@ -98,6 +108,7 @@ defineProps<{
   tunnelRuntimeStatus: 'stopped' | 'starting' | 'running' | 'error'
   quickTunnelUrl: string
   tunnelRuntimeError: string
+  externalTunnelRunning: boolean
 }>()
 
 defineEmits<{
@@ -198,5 +209,36 @@ defineEmits<{
   color: #fca5a5;
   font-size: 12px;
   word-break: break-word;
+}
+
+.external-tunnel-notice {
+  background: #1e293b;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.external-tunnel-message {
+  margin: 0 0 8px;
+  color: #60a5fa;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.external-tunnel-help {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.external-tunnel-link {
+  color: #3b82f6;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.external-tunnel-link:hover {
+  text-decoration: underline;
 }
 </style>

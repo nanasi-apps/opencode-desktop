@@ -188,7 +188,9 @@
     },
     "messages": {
       "saved": "保存しました",
+      "savedAndRestarted": "保存しました（OpenCode を再起動しました）",
       "saveFailed": "保存に失敗しました",
+      "saveWillRestartConfirm": "この保存では OpenCode が再起動されます。続行しますか？",
       "restartingOpencode": "OpenCodeを再起動中です...",
       "cloudflaredInstalled": "cloudflared をインストールしました",
       "failedToInstallCloudflared": "cloudflared のインストールに失敗しました",
@@ -544,6 +546,11 @@
       "label": "Quick Tunnel Host",
       "waitingForHost": "cloudflared からホストを待機しています...",
       "hostWillAppear": "トンネル起動後にここへ表示されます。"
+    },
+    "externalRunning": {
+      "message": "Cloudflare Tunnel はすでにシステムで設定されています",
+      "help": "システムに既存の Cloudflare Tunnel 設定が検出されました。設定を変更するには、Cloudflare ダッシュボードから管理してください。",
+      "link": "one.dash.cloudflare.com で設定を管理"
     }
   },
   "omo": {

@@ -18,7 +18,7 @@ import { readConfig, writeConfig, getConfigPath, getAvailableModels } from './pr
 import { readOmoConfig, writeOmoConfig, getOmoConfigPath } from './procedures/omo-config.js'
 import { getSetupState, recordSetupSuccess } from './procedures/setup.js'
 import { readSettings, writeSettings, getSettingsPath as getWrapperSettingsPath } from './procedures/wrapper.js'
-import { startTunnel, stopTunnel, getTunnelStatus, getTunnelSettings, onTunnelCrashEvent } from './procedures/tunnel.js'
+import { startTunnel, stopTunnel, getTunnelStatus, getTunnelSettings, onTunnelCrashEvent, getExternalTunnelStatus } from './procedures/tunnel.js'
 import { checkForUpdates, checkOpencodeUpdates, upgradeOpencode } from './procedures/update.js'
 import { readProjectState, writeProjectState, getProjectStatePath } from './procedures/project-state.js'
 
@@ -75,6 +75,7 @@ export const router = os.router({
     getTunnelStatus,
     getTunnelSettings,
     onTunnelCrashEvent,
+    getExternalTunnelStatus,
   }),
   update: os.router({
     checkForUpdates,

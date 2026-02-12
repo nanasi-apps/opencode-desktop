@@ -13,6 +13,7 @@ import {
   readWrapperSettings,
 } from '../../services/wrapper-settings.js'
 import { getServicePort } from '../../services/launchd-service.js'
+import { checkExternalCloudflaredService } from '../../services/cloudflared-installer.js'
 
 export const startTunnel = os.handler(async () => {
   const settings = await readWrapperSettings()
@@ -47,4 +48,9 @@ export const getTunnelSettings = os.handler(async () => {
 
 export const onTunnelCrashEvent = os.handler(async () => {
   return { supported: true }
+})
+
+export const getExternalTunnelStatus = os.handler(async () => {
+  const externalInfo = await checkExternalCloudflaredService()
+  return externalInfo
 })

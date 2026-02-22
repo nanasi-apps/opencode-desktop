@@ -3,6 +3,8 @@ import {
   startOpencodeWeb,
   stopOpencodeWeb,
   restartOpencodeWeb,
+  stopLaunchdServiceOnly,
+  deleteLaunchdService,
   getStatus,
   getPort,
   getPid,
@@ -57,6 +59,16 @@ export const enableLaunchdService = os.handler(async () => {
 export const disableLaunchdService = os.handler(async () => {
   await uninstallService()
   return { disabled: true }
+})
+
+export const stopLaunchdService = os.handler(async () => {
+  await stopLaunchdServiceOnly()
+  return { stopped: true }
+})
+
+export const deleteLaunchdServiceEntry = os.handler(async () => {
+  await deleteLaunchdService()
+  return { deleted: true }
 })
 
 export const refreshProcessStatus = os.handler(async () => {

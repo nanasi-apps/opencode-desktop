@@ -4,6 +4,12 @@
     "oneValuePerLine": "1行に1つの値",
     "keyValuePerLine": "key=value (1行に1つ)",
     "emptyObject": "{'{}'}",
+    "loading": "読み込み中...",
+    "noData": "データがありません",
+    "add": "追加",
+    "remove": "削除",
+    "back": "戻る",
+    "save": "保存",
     "permission": {
       "default": "デフォルト",
       "ask": "確認",
@@ -196,6 +202,10 @@
       "saved": "保存しました",
       "savedAndRestarted": "保存しました（OpenCode を再起動しました）",
       "saveFailed": "保存に失敗しました",
+      "launchdStopped": "バックグラウンドサービスを停止しました",
+      "launchdStopFailed": "バックグラウンドサービスの停止に失敗しました",
+      "launchdDeleted": "バックグラウンドサービスを削除しました",
+      "launchdDeleteFailed": "バックグラウンドサービスの削除に失敗しました",
       "saveWillRestartConfirm": "この保存では OpenCode が再起動されます。続行しますか？",
       "restartingOpencode": "OpenCodeを再起動中です...",
       "cloudflaredInstalled": "cloudflared をインストールしました",
@@ -337,12 +347,19 @@
       "help": "`local` はこのマシン上でコマンドを起動します。`remote` は HTTP(S) 経由で MCP サーバーに接続します。"
     },
     "command": {
-      "label": "Command (1行1要素)",
-      "help": "ローカル MCP サーバー起動時のコマンドと引数です。1行に1要素ずつ入力してください（例: npx / -y / package-name）。"
+      "label": "Command",
+      "help": "ローカル MCP サーバー起動時のコマンドと引数です。配列の各 index ごとに入力できます。コマンドを貼り付けた場合はスペース区切りで自動分割します。",
+      "argPlaceholder": "引数 {index}",
+      "addArg": "引数を追加",
+      "removeArg": "引数を削除"
     },
     "environment": {
       "label": "Environment (KEY=VALUE)",
-      "help": "ローカル MCP 実行時の環境変数です。1行に1つ KEY=VALUE 形式で入力してください。"
+      "help": "ローカル MCP 実行時の環境変数です。配列の各 index を key/value 入力で設定します。",
+      "keyPlaceholder": "環境変数名",
+      "valuePlaceholder": "値",
+      "addRow": "環境変数を追加",
+      "removeRow": "環境変数を削除"
     },
     "url": {
       "label": "URL",
@@ -440,6 +457,14 @@
       "label": "ログイン時に起動",
       "help": "OS にサインインしたときに OpenCode Desktop を自動で起動します。"
     },
+    "autoRestart": {
+      "label": "異常終了時に自動再起動",
+      "help": "有効時は、異常終了した場合のみ launchd が OpenCode Web を自動再起動します。"
+    },
+    "restartThrottleSeconds": {
+      "label": "再起動間隔 (秒)",
+      "help": "launchd が再起動を試行する最小間隔です。範囲: 1-3600。"
+    },
     "backgroundService": {
       "label": "バックグラウンドサービス (launchd)",
       "help": "OpenCode Web を macOS の launchd サービスとして実行します。アプリ再起動後も動作し、クラッシュ時に自動復旧します。",
@@ -448,8 +473,12 @@
       "statusNotInstalled": "サービス未インストール",
       "enable": "サービスを有効化",
       "disable": "サービスを無効化",
+      "stop": "サービスを停止",
+      "delete": "サービスを削除",
       "enabling": "有効化中...",
-      "disabling": "無効化中..."
+      "disabling": "無効化中...",
+      "stopping": "停止中...",
+      "deleting": "削除中..."
     },
     "updateCheck": {
       "label": "デスクトップ更新",
@@ -601,5 +630,12 @@
     "installing": "インストール中...",
     "ready": "準備完了",
     "failed": "失敗"
+  },
+  "schema": {
+    "items": "項目",
+    "itemName": "項目名"
+  },
+  "schemaDemo": {
+    "title": "スキーマ自動レンダリングデモ"
   }
 }

@@ -99,6 +99,7 @@
               v-if="section.id === 'general'"
               :config="opencode.config"
               :available-models="availableModels"
+              :schema-fields="opencodeSchema.generalFields.value"
               @update="opencode.setValue"
             />
 
@@ -138,6 +139,7 @@
               :item-anchor-ids="sectionAnchorIdMaps.agent"
               :builtin-agents="builtinAgents"
               :available-models="availableModels"
+              :schema-fields="opencodeSchema.agentFields.value"
               :collapsed-state="collapsedAgents"
               @add="opencode.addAgent"
               @remove="opencode.removeAgent"
@@ -148,30 +150,36 @@
             <PermissionSection
               v-else-if="section.id === 'permission'"
               :permissions="opencode.permissions.value"
+              :schema-fields="opencodeSchema.permissionFields.value"
               @update-permission="opencode.setPermission"
             />
 
             <ServerSection
               v-else-if="section.id === 'server'"
               :server="opencode.server.value"
+              :schema-fields="opencodeSchema.serverFields.value"
               @update-nested="(key, value) => opencode.setNestedValue('server', key, value)"
             />
 
             <CompactionSection
               v-else-if="section.id === 'compaction'"
               :compaction="opencode.compaction.value"
+              :schema-fields="opencodeSchema.compactionFields.value"
               @update-nested="(key, value) => opencode.setNestedValue('compaction', key, value)"
             />
 
             <ExperimentalSection
               v-else-if="section.id === 'experimental'"
               :experimental="opencode.experimental.value"
+              :schema-fields="opencodeSchema.experimentalFields.value"
               @update-nested="(key, value) => opencode.setNestedValue('experimental', key, value)"
             />
 
             <DesktopSection
               v-else-if="section.id === 'desktop'"
               :launch-at-login="wrapper.launchAtLogin.value"
+              :service-auto-restart="wrapper.service.value.autoRestart"
+              :service-restart-throttle-seconds="wrapper.service.value.restartThrottleSeconds"
               :launchd-status="launchdStatus"
               :launchd-busy="launchdBusy"
               :update-check-busy="updateCheckBusy"
@@ -190,8 +198,12 @@
               :opencode-update-message="opencodeUpdateMessage"
               :opencode-last-checked-at="opencodeLastCheckedAt"
               @update:launch-at-login="wrapper.setLaunchAtLogin"
+              @update:service-auto-restart="wrapper.setServiceAutoRestart"
+              @update:service-restart-throttle-seconds="wrapper.setServiceRestartThrottleSeconds"
               @enable:launchd="enableLaunchd"
               @disable:launchd="disableLaunchd"
+              @stop:launchd="stopLaunchd"
+              @delete:launchd="deleteLaunchd"
               @check:updates="checkDesktopUpdates"
               @check:opencode-updates="checkOpencodeUpdates"
               @upgrade:opencode="upgradeOpencode"
@@ -242,6 +254,33 @@
               @install:cloudflared="installCloudflared"
             />
 
+                  <DynamicSchemaSection
+                    v-else-if="section.id === 'tui'"
+                    :fields="opencodeSchema.tuiFields.value"
+                    :values="opencode.config.tui ?? {}"
+                    :is-loading="opencodeSchema.isLoading.value"
+                    :schema-error="opencodeSchema.schemaError.value"
+                    @update="(key, value) => opencode.setNestedValue('tui', key, value)"
+                  />
+
+                  <DynamicSchemaSection
+                    v-else-if="section.id === 'skills'"
+                    :fields="opencodeSchema.skillsFields.value"
+                    :values="opencode.config.skills ?? {}"
+                    :is-loading="opencodeSchema.isLoading.value"
+                    :schema-error="opencodeSchema.schemaError.value"
+                    @update="(key, value) => opencode.setNestedValue('skills', key, value)"
+                  />
+
+                  <DynamicSchemaSection
+                    v-else-if="section.id === 'watcher'"
+                    :fields="opencodeSchema.watcherFields.value"
+                    :values="opencode.config.watcher ?? {}"
+                    :is-loading="opencodeSchema.isLoading.value"
+                    :schema-error="opencodeSchema.schemaError.value"
+                    @update="(key, value) => opencode.setNestedValue('watcher', key, value)"
+                  />
+
                   <OmoSection
                     v-else-if="isOmoSection(section.id)"
                     :section-id="section.id"
@@ -281,7 +320,9 @@ import DesktopSection from '../components/settings/DesktopSection.vue'
 import WebSection from '../components/settings/WebSection.vue'
 import TunnelSection from '../components/settings/TunnelSection.vue'
 import OmoSection from '../components/settings/OmoSection.vue'
+import DynamicSchemaSection from '../components/settings/DynamicSchemaSection.vue'
 import { useOpencodeConfig } from '../composables/useOpencodeConfig.js'
+import { useOpencodeSchema } from '../composables/useOpencodeSchema.js'
 import { useWrapperConfig } from '../composables/useWrapperConfig.js'
 import { useOmoConfig } from '../composables/useOmoConfig.js'
 import type { SettingsGroup, SettingsSection } from '../types/settings.js'
@@ -307,6 +348,7 @@ const route = useRoute()
 const { t } = useI18n()
 
 const opencode = useOpencodeConfig()
+const opencodeSchema = useOpencodeSchema()
 const wrapper = useWrapperConfig()
 const omo = useOmoConfig()
 
@@ -381,7 +423,9 @@ const sectionDefs = [
   { id: 'omo-comment-checker', labelKey: 'settings.sections.commentChecker', group: 'omo' },
   { id: 'omo-experimental', labelKey: 'settings.sections.experimental', group: 'omo' },
   { id: 'omo-auto-update', labelKey: 'settings.sections.autoUpdate', group: 'omo' },
-  { id: 'omo-skills', labelKey: 'settings.sections.skills', group: 'omo' },
+  { id: 'tui', labelKey: 'settings.sections.tui', group: 'opencode' },
+  { id: 'skills', labelKey: 'settings.sections.skills', group: 'opencode' },
+  { id: 'watcher', labelKey: 'settings.sections.watcher', group: 'opencode' },
   { id: 'omo-ralph-loop', labelKey: 'settings.sections.ralphLoop', group: 'omo' },
   { id: 'omo-background-task', labelKey: 'settings.sections.backgroundTask', group: 'omo' },
   { id: 'omo-notification', labelKey: 'settings.sections.notification', group: 'omo' },
@@ -990,6 +1034,38 @@ async function disableLaunchd() {
   }
 }
 
+async function stopLaunchd() {
+  launchdBusy.value = true
+  try {
+    const client = await clientReady
+    await client.process.stopLaunchdService()
+    await refreshLaunchdStatus()
+    saveMessage.value = t('settings.messages.launchdStopped')
+    saveMessageType.value = 'success'
+  } catch (err) {
+    saveMessage.value = err instanceof Error ? err.message : t('settings.messages.launchdStopFailed')
+    saveMessageType.value = 'error'
+  } finally {
+    launchdBusy.value = false
+  }
+}
+
+async function deleteLaunchd() {
+  launchdBusy.value = true
+  try {
+    const client = await clientReady
+    await client.process.deleteLaunchdServiceEntry()
+    await refreshLaunchdStatus()
+    saveMessage.value = t('settings.messages.launchdDeleted')
+    saveMessageType.value = 'success'
+  } catch (err) {
+    saveMessage.value = err instanceof Error ? err.message : t('settings.messages.launchdDeleteFailed')
+    saveMessageType.value = 'error'
+  } finally {
+    launchdBusy.value = false
+  }
+}
+
 async function checkDesktopUpdates() {
   updateCheckBusy.value = true
   updateError.value = ''
@@ -1239,6 +1315,7 @@ onMounted(async () => {
     loadedOmoConfig = cloneJsonObject(omo.getConfigForSave())
     loading.value = false
     void omo.loadSchema()
+    void opencodeSchema.loadSchema()
   }
 
   Object.keys(opencode.providers.value).forEach((key) => {

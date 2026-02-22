@@ -12,6 +12,7 @@ import {
   getServiceStatus,
   getServicePort,
   stopService,
+  uninstallService,
   type LaunchdServiceStatus,
 } from './launchd-service.js'
 
@@ -122,6 +123,20 @@ export async function stopOpencodeWeb(): Promise<void> {
 export async function restartOpencodeWeb(): Promise<{ port: number }> {
   await stopOpencodeWeb()
   return await startOpencodeWeb()
+}
+
+export async function stopLaunchdServiceOnly(): Promise<void> {
+  stopTunnelService()
+  await stopService()
+  detectedPort = null
+  currentStatus = 'stopped'
+}
+
+export async function deleteLaunchdService(): Promise<void> {
+  stopTunnelService()
+  await uninstallService()
+  detectedPort = null
+  currentStatus = 'stopped'
 }
 
 export async function getLaunchdStatus(): Promise<LaunchdServiceStatus> {

@@ -113,6 +113,17 @@ function buildPlistXml(programArgs: string[], settings: WrapperSettings, shellEn
     envXml.push(`    <string>${xmlEscape(envEntries[i + 1])}</string>`)
   }
 
+  const keepAliveXml = settings.service.autoRestart
+    ? `  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>${settings.service.restartThrottleSeconds}</integer>`
+    : `  <key>KeepAlive</key>
+  <false/>`
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -127,8 +138,7 @@ ${envXml.join('\n')}
   </dict>
   <key>RunAtLoad</key>
   <true/>
-  <key>KeepAlive</key>
-  <true/>
+${keepAliveXml}
   <key>StandardOutPath</key>
   <string>${xmlEscape(stdoutPath)}</string>
   <key>StandardErrorPath</key>
@@ -219,6 +229,8 @@ export async function startService(): Promise<void> {
     throw new Error('Service is not installed. Call installService first.')
   }
 
+  await launchctl(['bootstrap', `gui/${getUid()}`, PLIST_PATH], true)
+  await launchctl(['enable', launchctlDomainTarget()], true)
   await launchctl(['kickstart', '-k', launchctlDomainTarget()])
 }
 
@@ -228,7 +240,7 @@ export async function stopService(): Promise<void> {
     return
   }
 
-  await launchctl(['kill', 'SIGTERM', launchctlDomainTarget()], true)
+  await launchctl(['bootout', `gui/${getUid()}`, PLIST_PATH], true)
 }
 
 export async function reinstallService(settings: WrapperSettings): Promise<void> {

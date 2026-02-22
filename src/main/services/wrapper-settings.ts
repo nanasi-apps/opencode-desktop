@@ -14,6 +14,10 @@ export interface TunnelSettings {
 
 export interface WrapperSettings {
   launchAtLogin: boolean
+  service: {
+    autoRestart: boolean
+    restartThrottleSeconds: number
+  }
   web: {
     port: number | null
     hostname: string
@@ -29,6 +33,10 @@ export interface WrapperSettings {
 
 const DEFAULT_SETTINGS: WrapperSettings = {
   launchAtLogin: false,
+  service: {
+    autoRestart: true,
+    restartThrottleSeconds: 10,
+  },
   web: {
     port: null,
     hostname: '127.0.0.1',
@@ -80,6 +88,8 @@ async function fileExists(filePath: string): Promise<boolean> {
 
 function sanitizeSettings(input: Partial<WrapperSettings> | null | undefined): WrapperSettings {
   const launchAtLogin = input?.launchAtLogin === true
+  const serviceAutoRestart = input?.service?.autoRestart !== false
+  const serviceRestartThrottle = input?.service?.restartThrottleSeconds
   const legacyPort = (input as { webStartup?: { preferredPort?: number } } | undefined)?.webStartup?.preferredPort
   const port = input?.web?.port ?? legacyPort
   const hostnameRaw = input?.web?.hostname
@@ -103,8 +113,18 @@ function sanitizeSettings(input: Partial<WrapperSettings> | null | undefined): W
   const tunnelCloudflaredPath = typeof input?.tunnel?.cloudflaredPath === 'string' && input.tunnel.cloudflaredPath.trim() ? input.tunnel.cloudflaredPath.trim() : null
   const tunnelAutoStart = true
 
+  const restartThrottleSeconds = Number.isInteger(serviceRestartThrottle)
+    && (serviceRestartThrottle as number) >= 1
+    && (serviceRestartThrottle as number) <= 3600
+    ? (serviceRestartThrottle as number)
+    : DEFAULT_SETTINGS.service.restartThrottleSeconds
+
   return {
     launchAtLogin,
+    service: {
+      autoRestart: serviceAutoRestart,
+      restartThrottleSeconds,
+    },
     web: {
       port: isValidPort ? (port as number) : null,
       hostname,
@@ -135,6 +155,7 @@ export async function readWrapperSettings(): Promise<WrapperSettings> {
   if (!(await fileExists(settingsPath))) {
     return {
       ...DEFAULT_SETTINGS,
+      service: { ...DEFAULT_SETTINGS.service },
       web: { ...DEFAULT_SETTINGS.web },
       tunnel: { ...DEFAULT_SETTINGS.tunnel },
     }
@@ -147,6 +168,7 @@ export async function readWrapperSettings(): Promise<WrapperSettings> {
   } catch {
     return {
       ...DEFAULT_SETTINGS,
+      service: { ...DEFAULT_SETTINGS.service },
       web: { ...DEFAULT_SETTINGS.web },
       tunnel: { ...DEFAULT_SETTINGS.tunnel },
     }

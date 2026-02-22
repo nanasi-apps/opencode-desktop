@@ -4,12 +4,22 @@
     "oneValuePerLine": "One value per line",
     "keyValuePerLine": "key=value (one per line)",
     "emptyObject": "{'{}'}",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "add": "Add",
+    "remove": "Remove",
+    "back": "Back",
+    "save": "Save",
     "permission": {
       "default": "default",
       "ask": "ask",
       "allow": "allow",
       "deny": "deny"
     }
+  },
+  "schema": {
+    "items": "Items",
+    "itemName": "Item name"
   },
   "modelPicker": {
     "filterPlaceholder": "Filter models...",
@@ -196,6 +206,10 @@
       "saved": "Saved",
       "savedAndRestarted": "Saved (OpenCode restarted)",
       "saveFailed": "Save failed",
+      "launchdStopped": "Background service stopped",
+      "launchdStopFailed": "Failed to stop background service",
+      "launchdDeleted": "Background service deleted",
+      "launchdDeleteFailed": "Failed to delete background service",
       "saveWillRestartConfirm": "Saving these changes will restart OpenCode. Continue?",
       "restartingOpencode": "Restarting OpenCode...",
       "cloudflaredInstalled": "cloudflared installed",
@@ -337,12 +351,19 @@
       "help": "`local` launches a command on this machine. `remote` connects to an MCP server over HTTP(S)."
     },
     "command": {
-      "label": "Command (one arg per line)",
-      "help": "Command and arguments for launching a local MCP server. Enter one token per line, for example: npx, -y, package-name."
+      "label": "Command",
+      "help": "Command and arguments for launching a local MCP server. Enter one input per array index. When you paste a command, it is automatically split by spaces.",
+      "argPlaceholder": "Argument {index}",
+      "addArg": "Add argument",
+      "removeArg": "Remove argument"
     },
     "environment": {
       "label": "Environment (KEY=VALUE)",
-      "help": "Environment variables for local MCP execution. One KEY=VALUE pair per line."
+      "help": "Environment variables for local MCP execution. Use key/value row inputs (one row per entry).",
+      "keyPlaceholder": "Environment key",
+      "valuePlaceholder": "Value",
+      "addRow": "Add environment variable",
+      "removeRow": "Remove environment variable"
     },
     "url": {
       "label": "URL",
@@ -440,6 +461,14 @@
       "label": "Launch at Login",
       "help": "Automatically starts OpenCode Desktop when you sign in to your OS account."
     },
+    "autoRestart": {
+      "label": "Auto Restart on Crash",
+      "help": "When enabled, launchd automatically restarts OpenCode Web only after abnormal exits."
+    },
+    "restartThrottleSeconds": {
+      "label": "Restart Throttle (sec)",
+      "help": "Minimum seconds launchd waits between restart attempts. Range: 1-3600."
+    },
     "backgroundService": {
       "label": "Background Service (launchd)",
       "help": "Runs OpenCode Web as a macOS launchd service. Survives app restarts and auto-recovers from crashes.",
@@ -448,8 +477,12 @@
       "statusNotInstalled": "Service is not installed",
       "enable": "Enable Service",
       "disable": "Disable Service",
+      "stop": "Stop Service",
+      "delete": "Delete Service",
       "enabling": "Enabling...",
-      "disabling": "Disabling..."
+      "disabling": "Disabling...",
+      "stopping": "Stopping...",
+      "deleting": "Deleting..."
     },
     "updateCheck": {
       "label": "Desktop Updates",
@@ -601,5 +634,8 @@
     "installing": "Installing...",
     "ready": "Ready",
     "failed": "Failed"
+  },
+  "schemaDemo": {
+    "title": "Schema Auto-Renderer Demo"
   }
 }

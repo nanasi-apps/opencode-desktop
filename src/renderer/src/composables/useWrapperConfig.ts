@@ -25,8 +25,14 @@ const defaultTunnelSettings: TunnelSettings = {
   autoStartWithWeb: true,
 }
 
+const defaultServiceSettings = {
+  autoRestart: true,
+  restartThrottleSeconds: 10,
+}
+
 export function useWrapperConfig() {
   const launchAtLogin = ref(false)
+  const service = ref({ ...defaultServiceSettings })
   const web = ref<WebSettings>({ ...defaultWebSettings })
   const tunnel = ref<TunnelSettings>({ ...defaultTunnelSettings })
   const isHostnameLockedByTunnel = computed(() => tunnel.value.enabled)
@@ -107,6 +113,17 @@ export function useWrapperConfig() {
     launchAtLogin.value = value
   }
 
+  function setServiceAutoRestart(value: boolean) {
+    service.value.autoRestart = value
+  }
+
+  function setServiceRestartThrottleSeconds(value: string) {
+    const parsed = Number.parseInt(value, 10)
+    service.value.restartThrottleSeconds = Number.isInteger(parsed) && parsed >= 1 && parsed <= 3600
+      ? parsed
+      : defaultServiceSettings.restartThrottleSeconds
+  }
+
   function getSettingsForSave(): WrapperSettings {
     const nextWeb = { ...web.value }
     if (tunnel.value.enabled) {
@@ -115,6 +132,7 @@ export function useWrapperConfig() {
 
     return {
       launchAtLogin: launchAtLogin.value,
+      service: { ...service.value },
       web: nextWeb,
       tunnel: {
         ...tunnel.value,
@@ -125,6 +143,10 @@ export function useWrapperConfig() {
 
   function loadSettings(settings: WrapperSettings) {
     launchAtLogin.value = settings.launchAtLogin === true
+    service.value = {
+      ...defaultServiceSettings,
+      ...(settings.service ?? {}),
+    }
     web.value = { ...defaultWebSettings, ...settings.web }
     tunnel.value = { ...defaultTunnelSettings, ...settings.tunnel }
     if (tunnel.value.enabled) {
@@ -154,6 +176,7 @@ export function useWrapperConfig() {
     web,
     tunnel,
     launchAtLogin,
+    service,
     isNetworkExposedWithoutAuth,
     isHostnameLockedByTunnel,
     setWebPort,
@@ -172,6 +195,8 @@ export function useWrapperConfig() {
     setTunnelHostname,
     setTunnelCloudflaredPath,
     setLaunchAtLogin,
+    setServiceAutoRestart,
+    setServiceRestartThrottleSeconds,
     getSettingsForSave,
     loadSettings,
     loadFromServerConfig,

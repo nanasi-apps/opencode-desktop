@@ -12,7 +12,7 @@ import {
   checkCloudflared,
   installCloudflaredProc,
 } from './procedures/installer.js'
-import { startWeb, stopWeb, restartWeb, getProcessStatus, getLaunchdServiceStatus, enableLaunchdService, disableLaunchdService, refreshProcessStatus } from './procedures/process.js'
+import { startWeb, stopWeb, restartWeb, getProcessStatus, getLaunchdServiceStatus, enableLaunchdService, disableLaunchdService, stopLaunchdService, deleteLaunchdServiceEntry, refreshProcessStatus } from './procedures/process.js'
 import { getOverallStatus } from './procedures/status.js'
 import { readConfig, writeConfig, getConfigPath, getAvailableModels } from './procedures/config.js'
 import { readOmoConfig, writeOmoConfig, getOmoConfigPath } from './procedures/omo-config.js'
@@ -21,6 +21,7 @@ import { readSettings, writeSettings, getSettingsPath as getWrapperSettingsPath 
 import { startTunnel, stopTunnel, getTunnelStatus, getTunnelSettings, onTunnelCrashEvent, getExternalTunnelStatus } from './procedures/tunnel.js'
 import { checkForUpdates, checkOpencodeUpdates, upgradeOpencode } from './procedures/update.js'
 import { readProjectState, writeProjectState, getProjectStatePath } from './procedures/project-state.js'
+import { getOpencodeSchema, refreshOpencodeSchema } from './procedures/schema.js'
 
 export const router = os.router({
   installer: os.router({
@@ -44,6 +45,8 @@ export const router = os.router({
     getLaunchdServiceStatus,
     enableLaunchdService,
     disableLaunchdService,
+    stopLaunchdService,
+    deleteLaunchdServiceEntry,
     refreshProcessStatus,
   }),
   status: os.router({
@@ -86,6 +89,10 @@ export const router = os.router({
     readProjectState,
     writeProjectState,
     getProjectStatePath,
+  }),
+  schema: os.router({
+    getOpencodeSchema,
+    refreshOpencodeSchema,
   }),
 })
 

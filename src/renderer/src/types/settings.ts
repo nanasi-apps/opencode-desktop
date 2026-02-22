@@ -148,6 +148,25 @@ export interface OmoSchemaField {
   properties?: OmoSchemaField[]
 }
 
+export type OpencodeFieldType = OmoFieldType | 'union'
+
+export interface UnionOption {
+  type: 'boolean' | 'string' | 'enum'
+  const?: unknown
+  options?: string[]
+}
+
+export interface OpencodeSchemaField {
+  key: string
+  label: string
+  type: OpencodeFieldType
+  description: string
+  options?: string[]
+  properties?: OpencodeSchemaField[]
+  unionOptions?: UnionOption[]
+  section?: string
+}
+
 export type OmoAgentMode = 'subagent' | 'primary' | 'all' | ''
 
 export interface OmoAgentPermission {
@@ -192,6 +211,10 @@ export interface OmoConfig {
 
 export interface WrapperSettings {
   launchAtLogin: boolean
+  service: {
+    autoRestart: boolean
+    restartThrottleSeconds: number
+  }
   web: WebSettings
   tunnel: TunnelSettings
 }

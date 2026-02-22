@@ -19,6 +19,10 @@ const tunnelSettingsSchema = z.object({
 
 const wrapperSettingsSchema = z.object({
   launchAtLogin: z.boolean(),
+  service: z.object({
+    autoRestart: z.boolean(),
+    restartThrottleSeconds: z.number().int().min(1).max(3600),
+  }),
   web: z.object({
     port: z.number().int().min(1).max(65535).nullable(),
     hostname: z.string().min(1),

@@ -8,6 +8,23 @@
       @update:model-value="$emit('update:launchAtLogin', Boolean($event))"
       :help="t('desktop.launchAtLogin.help')"
     />
+    <SettingsField
+      :label="t('desktop.autoRestart.label')"
+      type="checkbox"
+      :model-value="serviceAutoRestart"
+      @update:model-value="$emit('update:serviceAutoRestart', Boolean($event))"
+      :help="t('desktop.autoRestart.help')"
+    />
+    <SettingsField
+      :label="t('desktop.restartThrottleSeconds.label')"
+      type="number"
+      :model-value="serviceRestartThrottleSeconds"
+      :min="1"
+      :max="3600"
+      :disabled="!serviceAutoRestart"
+      @update:model-value="$emit('update:serviceRestartThrottleSeconds', String($event))"
+      :help="t('desktop.restartThrottleSeconds.help')"
+    />
     <div class="launchd-field">
       <div class="launchd-header">
         <span class="field-label">{{ t('desktop.backgroundService.label') }}</span>
@@ -15,6 +32,13 @@
       </div>
       <p class="field-help">{{ t('desktop.backgroundService.help') }}</p>
       <div class="launchd-actions">
+        <button
+          class="launchd-btn disable"
+          :disabled="launchdBusy || launchdStatus !== 'running'"
+          @click="$emit('stop:launchd')"
+        >
+          {{ launchdBusy ? t('desktop.backgroundService.stopping') : t('desktop.backgroundService.stop') }}
+        </button>
         <button
           v-if="launchdStatus !== 'running'"
           class="launchd-btn enable"
@@ -24,12 +48,18 @@
           {{ launchdBusy ? t('desktop.backgroundService.enabling') : t('desktop.backgroundService.enable') }}
         </button>
         <button
-          v-else
           class="launchd-btn disable"
           :disabled="launchdBusy"
           @click="$emit('disable:launchd')"
         >
           {{ launchdBusy ? t('desktop.backgroundService.disabling') : t('desktop.backgroundService.disable') }}
+        </button>
+        <button
+          class="launchd-btn danger"
+          :disabled="launchdBusy"
+          @click="$emit('delete:launchd')"
+        >
+          {{ launchdBusy ? t('desktop.backgroundService.deleting') : t('desktop.backgroundService.delete') }}
         </button>
       </div>
     </div>
@@ -90,6 +120,8 @@ const { t } = useI18n()
 
 const props = defineProps<{
   launchAtLogin: boolean
+  serviceAutoRestart: boolean
+  serviceRestartThrottleSeconds: number
   launchdStatus: 'running' | 'stopped' | 'not_installed'
   launchdBusy: boolean
   updateCheckBusy: boolean
@@ -111,8 +143,12 @@ const props = defineProps<{
 
 defineEmits<{
   'update:launchAtLogin': [value: boolean]
+  'update:serviceAutoRestart': [value: boolean]
+  'update:serviceRestartThrottleSeconds': [value: string]
   'enable:launchd': []
   'disable:launchd': []
+  'stop:launchd': []
+  'delete:launchd': []
   'check:updates': []
   'check:opencode-updates': []
   'upgrade:opencode': []
@@ -294,6 +330,16 @@ const opencodeStatusText = computed(() => {
 
 .launchd-btn.disable:hover:not(:disabled) {
   background: #4a3d39;
+}
+
+.launchd-btn.danger {
+  background: #5a2a25;
+  color: #f8d7d3;
+  border: 1px solid #7b3d35;
+}
+
+.launchd-btn.danger:hover:not(:disabled) {
+  background: #6b322b;
 }
 
 .launchd-btn:disabled {

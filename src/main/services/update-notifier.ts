@@ -14,7 +14,6 @@ interface UpdateNotificationState {
 }
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
-const INITIAL_DELAY_MS = 30_000
 const CURRENT_STATE_VERSION = 1 as const
 
 let intervalTimer: NodeJS.Timeout | null = null
@@ -147,9 +146,7 @@ async function checkAndNotifyOnce(): Promise<void> {
 
 export function startUpdateNotifier(): void {
   if (intervalTimer) return
-  setTimeout(() => {
-    void checkAndNotifyOnce()
-  }, INITIAL_DELAY_MS)
+  void checkAndNotifyOnce()
   intervalTimer = setInterval(() => {
     void checkAndNotifyOnce()
   }, CHECK_INTERVAL_MS)

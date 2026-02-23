@@ -21,24 +21,75 @@
           :options="['local', 'remote']"
           :help="t('mcp.type.help')"
         />
-        <SettingsField
-          v-if="(srv as McpServerConfig)?.type !== 'remote'"
-          :label="t('mcp.command.label')"
-          type="textarea"
-          :rows="3"
-          :model-value="getCommandValue(srv as McpServerConfig)"
-          @update:model-value="updateCommandValue(name as string, $event)"
-          :help="t('mcp.command.help')"
-        />
-        <SettingsField
-          v-if="(srv as McpServerConfig)?.type !== 'remote'"
-          :label="t('mcp.environment.label')"
-          type="textarea"
-          :rows="4"
-          :model-value="getKeyValueText(srv as McpServerConfig, 'environment')"
-          @update:model-value="updateKeyValueText(name as string, 'environment', $event)"
-          :help="t('mcp.environment.help')"
-        />
+        <div v-if="(srv as McpServerConfig)?.type !== 'remote'" class="field command-field">
+          <label>{{ t('mcp.command.label') }}</label>
+          <div class="field-control">
+            <div
+              v-for="(row, rowIndex) in getCommandRows(name as string, srv as McpServerConfig)"
+              :key="row.id"
+              class="command-row"
+            >
+              <input
+                type="text"
+                :value="row.value"
+                :placeholder="t('mcp.command.argPlaceholder', { index: rowIndex })"
+                @input="updateCommandRow(name as string, rowIndex, ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                type="button"
+                class="command-row-remove"
+                :aria-label="t('mcp.command.removeArg')"
+                @click="removeCommandRow(name as string, rowIndex)"
+              >
+                <IconX :size="14" stroke-width="2" />
+              </button>
+            </div>
+
+            <button type="button" class="command-add-btn" @click="addCommandRow(name as string)">
+              <IconPlus :size="14" stroke-width="2" />
+              {{ t('mcp.command.addArg') }}
+            </button>
+            <p class="field-help">{{ t('mcp.command.help') }}</p>
+          </div>
+        </div>
+        <div v-if="(srv as McpServerConfig)?.type !== 'remote'" class="field environment-field">
+          <label>{{ t('mcp.environment.label') }}</label>
+          <div class="field-control">
+            <div
+              v-for="(row, rowIndex) in getEnvironmentRows(name as string, srv as McpServerConfig)"
+              :key="row.id"
+              class="header-row"
+            >
+              <input
+                type="text"
+                :value="row.key"
+                :placeholder="t('mcp.environment.keyPlaceholder')"
+                @input="updateEnvironmentRow(name as string, rowIndex, 'key', ($event.target as HTMLInputElement).value)"
+              />
+              <input
+                type="text"
+                :value="row.value"
+                :placeholder="t('mcp.environment.valuePlaceholder')"
+                @input="updateEnvironmentRow(name as string, rowIndex, 'value', ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                type="button"
+                class="header-row-remove"
+                :aria-label="t('mcp.environment.removeRow')"
+                @click="removeEnvironmentRow(name as string, rowIndex)"
+              >
+                <IconX :size="14" stroke-width="2" />
+              </button>
+            </div>
+
+            <button type="button" class="header-add-btn" @click="addEnvironmentRow(name as string)">
+              <IconPlus :size="14" stroke-width="2" />
+              {{ t('mcp.environment.addRow') }}
+            </button>
+
+            <p class="field-help">{{ t('mcp.environment.help') }}</p>
+          </div>
+        </div>
         <SettingsField
           v-else
           :label="t('mcp.url.label')"
@@ -122,6 +173,17 @@ interface HeaderRow {
   value: string
 }
 
+interface EnvironmentRow {
+  id: string
+  key: string
+  value: string
+}
+
+interface CommandRow {
+  id: string
+  value: string
+}
+
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -137,6 +199,8 @@ const emit = defineEmits<{
 
 const newMcpName = ref('')
 const headerRowsByServer = ref<Record<string, HeaderRow[]>>({})
+const commandRowsByServer = ref<Record<string, CommandRow[]>>({})
+const environmentRowsByServer = ref<Record<string, EnvironmentRow[]>>({})
 
 function addMcp() {
   const name = newMcpName.value.trim()
@@ -149,35 +213,97 @@ function getItemAnchorId(name: string): string | undefined {
   return props.itemAnchorIds?.[name]
 }
 
-function parseNonEmptyLines(value: string): string[] {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-}
-
-function parseKeyValueLines(value: string): Record<string, string> {
-  return value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .reduce<Record<string, string>>((map, line) => {
-      const separatorIndex = line.indexOf('=')
-      if (separatorIndex <= 0) return map
-      const key = line.slice(0, separatorIndex).trim()
-      if (!key) return map
-      const rawValue = line.slice(separatorIndex + 1)
-      map[key] = rawValue
-      return map
-    }, {})
-}
-
 function createHeaderRow(key = '', value = ''): HeaderRow {
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     key,
     value
   }
+}
+
+function createEnvironmentRow(key = '', value = ''): EnvironmentRow {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    key,
+    value,
+  }
+}
+
+function createCommandRow(value = ''): CommandRow {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    value,
+  }
+}
+
+function splitCommandInput(value: string): string[] {
+  const input = value.trim()
+  if (!input) return []
+  const parts: string[] = []
+  let current = ''
+  let quote: '"' | "'" | null = null
+  let escaped = false
+
+  for (const char of input) {
+    if (escaped) {
+      current += char
+      escaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      escaped = true
+      continue
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = null
+      } else {
+        current += char
+      }
+      continue
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char
+      continue
+    }
+
+    if (/\s/.test(char)) {
+      if (current) {
+        parts.push(current)
+        current = ''
+      }
+      continue
+    }
+
+    current += char
+  }
+
+  if (escaped) {
+    current += '\\'
+  }
+  if (current) {
+    parts.push(current)
+  }
+
+  return parts
+}
+
+function normalizeCommand(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+
+  if (typeof value === 'string') {
+    return splitCommandInput(value)
+  }
+
+  return []
 }
 
 function getHeaderRows(name: string, server: McpServerConfig): HeaderRow[] {
@@ -228,36 +354,97 @@ function removeHeaderRow(name: string, rowIndex: number) {
   syncHeaderRows(name)
 }
 
-function getCommandValue(server: McpServerConfig): string {
-  const command = server.command
-  if (Array.isArray(command)) {
-    return command.join('\n')
-  }
-  if (typeof command === 'string') {
-    return command
-  }
-  return ''
+function getCommandRows(name: string, server: McpServerConfig): CommandRow[] {
+  const existing = commandRowsByServer.value[name]
+  if (existing) return existing
+
+  const rows = normalizeCommand(server.command).map((token) => createCommandRow(token))
+  commandRowsByServer.value[name] = rows.length > 0 ? rows : [createCommandRow()]
+  return commandRowsByServer.value[name]
 }
 
-function updateCommandValue(name: string, value: unknown) {
-  const next = typeof value === 'string' ? parseNonEmptyLines(value) : []
+function syncCommandRows(name: string) {
+  const rows = commandRowsByServer.value[name] ?? []
+  const next = rows
+    .map((row) => row.value.trim())
+    .filter(Boolean)
   emit('updateField', name, 'command', next.length > 0 ? next : undefined)
 }
 
-function getKeyValueText(server: McpServerConfig, field: 'environment' | 'headers'): string {
-  const source = server[field]
-  if (!source || typeof source !== 'object' || Array.isArray(source)) {
-    return ''
+function updateCommandRow(name: string, rowIndex: number, value: string) {
+  const rows = commandRowsByServer.value[name]
+  if (!rows || !rows[rowIndex]) return
+
+  const parsed = splitCommandInput(value)
+  if (parsed.length > 1) {
+    rows.splice(rowIndex, 1, ...parsed.map((token) => createCommandRow(token)))
+  } else {
+    rows[rowIndex].value = value
   }
-  return Object.entries(source)
-    .filter(([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
-    .map(([key, value]) => `${key}=${String(value)}`)
-    .join('\n')
+
+  syncCommandRows(name)
 }
 
-function updateKeyValueText(name: string, field: 'environment' | 'headers', value: unknown) {
-  const parsed = typeof value === 'string' ? parseKeyValueLines(value) : {}
-  emit('updateField', name, field, Object.keys(parsed).length > 0 ? parsed : undefined)
+function addCommandRow(name: string) {
+  const rows = commandRowsByServer.value[name] ?? []
+  rows.push(createCommandRow())
+  commandRowsByServer.value[name] = rows
+}
+
+function removeCommandRow(name: string, rowIndex: number) {
+  const rows = commandRowsByServer.value[name]
+  if (!rows) return
+  rows.splice(rowIndex, 1)
+  if (rows.length === 0) rows.push(createCommandRow())
+  syncCommandRows(name)
+}
+
+function getEnvironmentRows(name: string, server: McpServerConfig): EnvironmentRow[] {
+  const existing = environmentRowsByServer.value[name]
+  if (existing) return existing
+
+  const environment = server.environment
+  const rows =
+    environment && typeof environment === 'object' && !Array.isArray(environment)
+      ? Object.entries(environment)
+          .filter(([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+          .map(([key, value]) => createEnvironmentRow(key, String(value)))
+      : []
+
+  environmentRowsByServer.value[name] = rows.length > 0 ? rows : [createEnvironmentRow()]
+  return environmentRowsByServer.value[name]
+}
+
+function syncEnvironmentRows(name: string) {
+  const rows = environmentRowsByServer.value[name] ?? []
+  const parsed = rows.reduce<Record<string, string>>((map, row) => {
+    const key = row.key.trim()
+    if (!key) return map
+    map[key] = row.value
+    return map
+  }, {})
+  emit('updateField', name, 'environment', Object.keys(parsed).length > 0 ? parsed : undefined)
+}
+
+function updateEnvironmentRow(name: string, rowIndex: number, field: 'key' | 'value', value: string) {
+  const rows = environmentRowsByServer.value[name]
+  if (!rows || !rows[rowIndex]) return
+  rows[rowIndex][field] = value
+  syncEnvironmentRows(name)
+}
+
+function addEnvironmentRow(name: string) {
+  const rows = environmentRowsByServer.value[name] ?? []
+  rows.push(createEnvironmentRow())
+  environmentRowsByServer.value[name] = rows
+}
+
+function removeEnvironmentRow(name: string, rowIndex: number) {
+  const rows = environmentRowsByServer.value[name]
+  if (!rows) return
+  rows.splice(rowIndex, 1)
+  if (rows.length === 0) rows.push(createEnvironmentRow())
+  syncEnvironmentRows(name)
 }
 
 function getTimeoutValue(server: McpServerConfig): number | string {
@@ -317,7 +504,20 @@ function updateTimeoutValue(name: string, value: unknown) {
   gap: 8px;
 }
 
-.header-row input {
+.command-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.command-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.header-row input,
+.command-row input {
   background: #1a1514;
   border: 1px solid #4f433f;
   border-radius: 6px;
@@ -329,12 +529,15 @@ function updateTimeoutValue(name: string, value: unknown) {
   transition: border-color 0.15s;
 }
 
-.header-row input:focus {
+.header-row input:focus,
+.command-row input:focus {
   border-color: #3b82f6;
 }
 
 .header-row-remove,
-.header-add-btn {
+.header-add-btn,
+.command-row-remove,
+.command-add-btn {
   background: none;
   border: 1px dashed #4f433f;
   border-radius: 6px;
@@ -350,12 +553,15 @@ function updateTimeoutValue(name: string, value: unknown) {
 }
 
 .header-row-remove:hover,
-.header-add-btn:hover {
+.header-add-btn:hover,
+.command-row-remove:hover,
+.command-add-btn:hover {
   border-color: #3b82f6;
   color: #3b82f6;
 }
 
-.header-add-btn {
+.header-add-btn,
+.command-add-btn {
   width: fit-content;
 }
 

@@ -9,30 +9,13 @@
         @toggle="toggleCollapsed(name)"
         @remove="$emit('remove', name)"
       >
-        <ModelSelectField
-          :label="t('agent.model.label')"
-          :model-value="String(getAgentValue(name, 'model'))"
-          :models="availableModels"
-          @update:model-value="$emit('updateField', name, 'model', $event)"
-          :help="t('agent.model.help')"
-        />
-        <SettingsField
-          :label="t('agent.temperature.label')"
-          type="number"
-          :model-value="getAgentValue(name, 'temperature')"
-          @update:model-value="$emit('updateField', name, 'temperature', parseNumber($event))"
-          :min="0"
-          :max="2"
-          :step="0.1"
-          :help="t('agent.temperature.help')"
-        />
-        <SettingsField
-          :label="t('agent.steps.label')"
-          type="number"
-          :model-value="getAgentValue(name, 'steps')"
-          @update:model-value="$emit('updateField', name, 'steps', parseInteger($event))"
-          :min="1"
-          :help="t('agent.steps.help')"
+        <OmoField
+          v-for="(field, index) in displayFields"
+          :key="`${name}-${field.key}-${index}`"
+          :field="field"
+          :available-models="availableModels"
+          :model-value="getAgentValue(name, field.key)"
+          @update:model-value="$emit('updateField', name, field.key, $event)"
         />
       </SettingsCard>
     </div>
@@ -47,13 +30,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import OmoField from '../OmoField.vue'
 import SettingsCard from './SettingsCard.vue'
-import SettingsField from './SettingsField.vue'
-import ModelSelectField from './ModelSelectField.vue'
 import AddItemInput from './AddItemInput.vue'
-import type { AgentsConfig, CollapsedState } from '../../types/settings.js'
+import type { AgentsConfig, CollapsedState, OmoSchemaField } from '../../types/settings.js'
 
 const { t } = useI18n()
 
@@ -62,6 +44,7 @@ const props = defineProps<{
   agentNames: string[]
   builtinAgents: string[]
   availableModels: string[]
+  schemaFields: OmoSchemaField[]
   collapsedState: CollapsedState
   itemAnchorIds?: Record<string, string>
 }>()
@@ -73,6 +56,24 @@ const emit = defineEmits<{
   updateCollapsed: [state: CollapsedState]
 }>()
 
+const VARIANT_OPTIONS = ['', 'low', 'medium', 'high', 'xhigh', 'max']
+
+const fallbackFields: OmoSchemaField[] = [
+  { key: 'model', label: 'Model', type: 'string', description: '' },
+  { key: 'temperature', label: 'Temperature', type: 'number', description: '' },
+  { key: 'steps', label: 'Steps', type: 'number', description: '' },
+]
+
+const displayFields = computed<OmoSchemaField[]>(() => {
+  const base = props.schemaFields.length > 0 ? props.schemaFields : fallbackFields
+  return base.map((field) => {
+    if (field.key === 'variant') {
+      return { ...field, type: 'enum', options: VARIANT_OPTIONS }
+    }
+    return field
+  })
+})
+
 const newAgentName = ref('')
 
 function isCollapsed(name: string): boolean {
@@ -83,24 +84,8 @@ function toggleCollapsed(name: string) {
   emit('updateCollapsed', { ...props.collapsedState, [name]: !isCollapsed(name) })
 }
 
-function getAgentValue(name: string, field: string): string | number {
-  const value = props.agents[name]?.[field]
-  if (typeof value === 'string' || typeof value === 'number') {
-    return value
-  }
-  return ''
-}
-
-function parseNumber(value: string | number | boolean): number | undefined {
-  const raw = String(value)
-  const parsed = parseFloat(raw)
-  return Number.isNaN(parsed) ? undefined : parsed
-}
-
-function parseInteger(value: string | number | boolean): number | undefined {
-  const raw = String(value)
-  const parsed = parseInt(raw, 10)
-  return Number.isNaN(parsed) ? undefined : parsed
+function getAgentValue(name: string, field: string): unknown {
+  return props.agents[name]?.[field]
 }
 
 function addAgent() {

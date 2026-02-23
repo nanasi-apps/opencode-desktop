@@ -87,6 +87,7 @@ export function useOmoConfig() {
   const config = reactive<OmoConfig>({})
   const schemaFields = ref<OmoSchemaField[]>([])
   const categoryValueFields = ref<OmoSchemaField[]>([])
+  const agentValueFields = ref<OmoSchemaField[]>([])
   const schemaError = ref('')
 
   const agentNames = computed(() => {
@@ -252,6 +253,34 @@ export function useOmoConfig() {
     const agents = config.agents ?? {}
     const value = agents[name]
     return isRecord(value) ? (value as OmoAgentConfig) : {}
+  }
+
+  function getAgentFieldValue(name: string, key: string): unknown {
+    const agent = getAgentObject(name)
+    if (key === 'permission') {
+      return agent.permission
+    }
+    return agent[key]
+  }
+
+  function setAgentFieldValue(name: string, key: string, value: unknown) {
+    if (key === 'permission') {
+      const agent = ensureAgentObject(name)
+      if (isRecord(value)) {
+        agent.permission = value as OmoAgentConfig['permission']
+      } else {
+        delete agent.permission
+      }
+      cleanupAgent(name)
+      return
+    }
+    const agent = ensureAgentObject(name)
+    if (value === undefined || value === null || value === '') {
+      delete agent[key]
+    } else {
+      agent[key] = value
+    }
+    cleanupAgent(name)
   }
 
   function getCategoryObject(name: string): OmoCategoryConfig {
@@ -566,8 +595,27 @@ export function useOmoConfig() {
       } else {
         categoryValueFields.value = []
       }
+
+      // Parse agent properties from schema (use first agent definition as template)
+      const agentsProperty = properties.agents
+      if (isRecord(agentsProperty) && isRecord(agentsProperty.properties)) {
+        const agentNames = Object.keys(agentsProperty.properties)
+        if (agentNames.length > 0) {
+          const firstAgent = agentsProperty.properties[agentNames[0]]
+          if (isRecord(firstAgent) && isRecord(firstAgent.properties)) {
+            agentValueFields.value = parseSchemaProperties(firstAgent.properties as Record<string, JsonSchemaProperty>)
+          } else {
+            agentValueFields.value = []
+          }
+        } else {
+          agentValueFields.value = []
+        }
+      } else {
+        agentValueFields.value = []
+      }
     } catch (err) {
       categoryValueFields.value = []
+      agentValueFields.value = []
       schemaError.value = err instanceof Error
         ? `Could not load OMO schema: ${err.message}`
         : 'Could not load OMO schema'
@@ -586,6 +634,7 @@ export function useOmoConfig() {
     config,
     schemaFields,
     categoryValueFields,
+    agentValueFields,
     schemaError,
     agentNames,
     categoryNames,
@@ -604,6 +653,8 @@ export function useOmoConfig() {
     isDisabledField,
     getFieldsForSection,
     getAgentObject,
+    getAgentFieldValue,
+    setAgentFieldValue,
     getAgentStringField,
     setAgentStringField,
     getAgentNumberField,

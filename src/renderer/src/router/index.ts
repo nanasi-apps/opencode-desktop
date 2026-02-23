@@ -4,6 +4,7 @@ import InstallView from '../views/InstallView.vue'
 import SetupView from '../views/SetupView.vue'
 import MainView from '../views/MainView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import SchemaDemoView from '../views/SchemaDemoView.vue'
 import { clientReady } from '../rpc/client.js'
 
 const router = createRouter({
@@ -14,6 +15,7 @@ const router = createRouter({
     { path: '/setup', component: SetupView },
     { path: '/main', component: MainView },
     { path: '/settings', component: SettingsView },
+    { path: '/schema-demo', component: SchemaDemoView },
   ],
 })
 

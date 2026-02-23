@@ -103,92 +103,13 @@
                 @toggle="toggleCollapsed(name)"
                 @remove="omo.removeAgent(name)"
               >
-                <ModelSelectField
-                  :label="t('omo.agentFields.model')"
-                  :model-value="omo.getAgentStringField(name, 'model')"
-                  :models="availableModels"
-                  @update:model-value="omo.setAgentStringField(name, 'model', String($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.variant')"
-                  :model-value="omo.getAgentStringField(name, 'variant')"
-                  @update:model-value="omo.setAgentStringField(name, 'variant', String($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.category')"
-                  :model-value="omo.getAgentStringField(name, 'category')"
-                  @update:model-value="omo.setAgentStringField(name, 'category', String($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.mode')"
-                  type="select"
-                  :model-value="omo.getAgentStringField(name, 'mode')"
-                  :options="['', 'subagent', 'primary', 'all']"
-                  @update:model-value="omo.setAgentStringField(name, 'mode', String($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.temperature')"
-                  type="number"
-                  :model-value="omo.getAgentNumberField(name, 'temperature')"
-                  @update:model-value="omo.setAgentNumberField(name, 'temperature', String($event))"
-                  :min="0"
-                  :max="2"
-                  :step="0.1"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.topP')"
-                  type="number"
-                  :model-value="omo.getAgentNumberField(name, 'top_p')"
-                  @update:model-value="omo.setAgentNumberField(name, 'top_p', String($event))"
-                  :min="0"
-                  :max="1"
-                  :step="0.01"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.disable')"
-                  type="checkbox"
-                  :model-value="omo.getAgentBooleanField(name, 'disable')"
-                  @update:model-value="omo.setAgentBooleanField(name, 'disable', Boolean($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.color')"
-                  :model-value="omo.getAgentStringField(name, 'color')"
-                  @update:model-value="omo.setAgentStringField(name, 'color', String($event))"
-                  placeholder="#AABBCC"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.description')"
-                  :model-value="omo.getAgentStringField(name, 'description')"
-                  @update:model-value="omo.setAgentStringField(name, 'description', String($event))"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.prompt')"
-                  type="textarea"
-                  :model-value="omo.getAgentStringField(name, 'prompt')"
-                  @update:model-value="omo.setAgentStringField(name, 'prompt', String($event))"
-                  :rows="4"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.promptAppend')"
-                  type="textarea"
-                  :model-value="omo.getAgentStringField(name, 'prompt_append')"
-                  @update:model-value="omo.setAgentStringField(name, 'prompt_append', String($event))"
-                  :rows="4"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.skills')"
-                  type="textarea"
-                  :model-value="omo.getAgentArrayField(name, 'skills')"
-                  @update:model-value="omo.setAgentArrayField(name, 'skills', String($event))"
-                  :rows="4"
-                />
-                <SettingsField
-                  :label="t('omo.agentFields.tools')"
-                  type="textarea"
-                  :model-value="omo.getAgentBooleanMapField(name, 'tools')"
-                  @update:model-value="omo.setAgentBooleanMapField(name, 'tools', String($event))"
-                  :rows="4"
-                  :help="t('omo.agentFields.toolsHelp')"
+                <OmoField
+                  v-for="(agentField, index) in agentValueFields"
+                  :key="`omo-agent-${name}-${agentField.key}-${index}`"
+                  :field="agentField"
+                  :available-models="availableModels"
+                  :model-value="omo.getAgentFieldValue(name, agentField.key)"
+                  @update:model-value="omo.setAgentFieldValue(name, agentField.key, $event)"
                 />
 
                 <div class="field field-textarea">
@@ -379,6 +300,26 @@ const categoryValueFields = computed<OmoSchemaField[]>(() => {
   if (Array.isArray(value)) return value
   if (value && Array.isArray(value.value)) return value.value
   return []
+})
+
+const VARIANT_OPTIONS = ['', 'low', 'medium', 'high', 'xhigh', 'max']
+
+const agentValueFields = computed<OmoSchemaField[]>(() => {
+  const raw = props.omo.agentValueFields
+  const base: OmoSchemaField[] = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.value) ? raw.value : [])
+
+  return base
+    .filter(field => field.key !== 'permission')
+    .map(field => {
+      if (field.key === 'variant') {
+        return { ...field, type: 'enum' as const, options: VARIANT_OPTIONS }
+      }
+      if (field.key === 'category') {
+        const categoryOptions = ['', ...categoryNames.value]
+        return { ...field, type: 'enum' as const, options: categoryOptions }
+      }
+      return field
+    })
 })
 
 function isDisabledField(key: string): boolean {

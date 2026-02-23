@@ -1,68 +1,32 @@
 <template>
   <div class="section-body">
-    <template v-for="field in generalFields" :key="field.key">
-      <ModelSelectField
-        v-if="isModelField(field.key)"
-        :label="field.label"
-        :model-value="getValue(field.key)"
-        :models="availableModels"
-        :placeholder="field.placeholder"
-        :help="field.description"
-        @update:model-value="setValue(field.key, $event)"
-      />
-
-      <SettingsField
-        v-else
-        :label="field.label"
-        :type="field.type || 'text'"
-        :model-value="getValue(field.key)"
-        @update:model-value="setValue(field.key, $event as string)"
-        :placeholder="field.placeholder"
-        :help="field.description"
-        :options="field.options"
-      />
-    </template>
+    <OmoField
+      v-for="field in schemaFields"
+      :key="field.key"
+      :field="field"
+      :available-models="availableModels"
+      :model-value="getValue(field.key)"
+      @update:model-value="emit('update', field.key, $event)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import SettingsField from './SettingsField.vue'
-import ModelSelectField from './ModelSelectField.vue'
-import type { OpencodeConfig, GeneralField } from '../../types/settings.js'
+import OmoField from '../OmoField.vue'
+import type { OpencodeConfig, OmoSchemaField } from '../../types/settings.js'
 
 const props = defineProps<{
   config: OpencodeConfig
   availableModels: string[]
+  schemaFields: OmoSchemaField[]
 }>()
 
 const emit = defineEmits<{
-  update: [key: string, value: string]
+  update: [key: string, value: unknown]
 }>()
 
-const { t } = useI18n()
-
-const generalFields = computed<GeneralField[]>(() => [
-  { key: 'theme', label: t('general.theme.label'), placeholder: t('general.theme.placeholder'), description: t('general.theme.description') },
-  { key: 'model', label: t('general.defaultModel.label'), placeholder: t('general.defaultModel.placeholder'), description: t('general.defaultModel.description') },
-  { key: 'small_model', label: t('general.smallModel.label'), placeholder: t('general.smallModel.placeholder'), description: t('general.smallModel.description') },
-  { key: 'default_agent', label: t('general.defaultAgent.label'), placeholder: t('general.defaultAgent.placeholder'), description: t('general.defaultAgent.description') },
-  { key: 'username', label: t('general.username.label'), placeholder: t('general.username.placeholder'), description: t('general.username.description') },
-  { key: 'logLevel', label: t('general.logLevel.label'), type: 'select', options: ['', 'error', 'warn', 'info', 'debug'], description: t('general.logLevel.description') },
-])
-
-function getValue(key: string): string {
-  const value = props.config[key]
-  return typeof value === 'string' ? value : ''
-}
-
-function setValue(key: string, value: string) {
-  emit('update', key, value)
-}
-
-function isModelField(key: string): boolean {
-  return key === 'model' || key === 'small_model'
+function getValue(key: string): unknown {
+  return (props.config as Record<string, unknown>)[key]
 }
 </script>
 

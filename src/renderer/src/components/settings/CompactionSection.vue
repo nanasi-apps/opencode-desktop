@@ -1,36 +1,31 @@
 <template>
   <div class="section-body">
-    <SettingsField
-      :label="t('compaction.auto.label')"
-      type="checkbox"
-      :model-value="compaction.auto === true"
-      @update:model-value="$emit('updateNested', 'auto', $event)"
-      :help="t('compaction.auto.help')"
-    />
-    <SettingsField
-      :label="t('compaction.prune.label')"
-      type="checkbox"
-      :model-value="compaction.prune === true"
-      @update:model-value="$emit('updateNested', 'prune', $event)"
-      :help="t('compaction.prune.help')"
+    <OmoField
+      v-for="field in schemaFields"
+      :key="field.key"
+      :field="field"
+      :model-value="getValue(field.key)"
+      @update:model-value="emit('updateNested', field.key, $event)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import SettingsField from './SettingsField.vue'
-import type { CompactionConfig } from '../../types/settings.js'
+import OmoField from '../OmoField.vue'
+import type { CompactionConfig, OmoSchemaField } from '../../types/settings.js'
 
-const { t } = useI18n()
-
-defineProps<{
+const props = defineProps<{
   compaction: CompactionConfig
+  schemaFields: OmoSchemaField[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   updateNested: [key: string, value: unknown]
 }>()
+
+function getValue(key: string): unknown {
+  return (props.compaction as Record<string, unknown>)[key]
+}
 </script>
 
 <style scoped>

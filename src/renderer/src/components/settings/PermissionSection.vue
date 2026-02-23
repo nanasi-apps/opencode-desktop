@@ -1,15 +1,15 @@
 <template>
   <div class="section-body">
-    <div class="field" v-for="tool in permissionTools" :key="tool">
-      <label>{{ tool }}</label>
+    <div class="field" v-for="field in permissionFields" :key="field.key">
+      <label>{{ field.label || field.key }}</label>
       <div class="field-control">
-        <select :value="getValue(tool)" @change="$emit('updatePermission', tool, ($event.target as HTMLSelectElement).value)">
+        <select :value="getValue(field.key)" @change="$emit('updatePermission', field.key, ($event.target as HTMLSelectElement).value)">
           <option value="">{{ t('common.permission.default') }}</option>
-          <option value="ask">{{ t('common.permission.ask') }}</option>
-          <option value="allow">{{ t('common.permission.allow') }}</option>
-          <option value="deny">{{ t('common.permission.deny') }}</option>
+          <option v-for="option in getOptions(field)" :key="`${field.key}-${option}`" :value="option">
+            {{ getOptionLabel(option) }}
+          </option>
         </select>
-        <p class="field-help">{{ getDescription(tool) }}</p>
+        <p class="field-help">{{ field.description || getDescription(field.key) }}</p>
       </div>
     </div>
   </div>
@@ -18,10 +18,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { PermissionsConfig } from '../../types/settings.js'
+import type { OmoSchemaField, PermissionsConfig } from '../../types/settings.js'
 
 const props = defineProps<{
   permissions: PermissionsConfig
+  schemaFields: OmoSchemaField[]
 }>()
 
 defineEmits<{
@@ -30,7 +31,18 @@ defineEmits<{
 
 const { t } = useI18n()
 
-const permissionTools = ['read', 'edit', 'bash', 'glob', 'grep', 'fetch', 'mcp', 'task']
+const fallbackTools = ['read', 'edit', 'bash', 'glob', 'grep', 'fetch', 'mcp', 'task']
+
+const permissionFields = computed<OmoSchemaField[]>(() => {
+  if (props.schemaFields.length > 0) return props.schemaFields
+  return fallbackTools.map((key) => ({
+    key,
+    label: key,
+    type: 'enum',
+    description: '',
+    options: ['ask', 'allow', 'deny'],
+  }))
+})
 
 const permissionDescriptions = computed<Record<string, string>>(() => ({
   read: t('permission.descriptions.read'),
@@ -49,6 +61,19 @@ function getValue(tool: string): string {
 
 function getDescription(tool: string): string {
   return permissionDescriptions.value[tool] ?? t('permission.descriptions.fallback')
+}
+
+function getOptions(field: OmoSchemaField): string[] {
+  return Array.isArray(field.options) && field.options.length > 0
+    ? field.options
+    : ['ask', 'allow', 'deny']
+}
+
+function getOptionLabel(option: string): string {
+  if (option === 'ask') return t('common.permission.ask')
+  if (option === 'allow') return t('common.permission.allow')
+  if (option === 'deny') return t('common.permission.deny')
+  return option
 }
 </script>
 

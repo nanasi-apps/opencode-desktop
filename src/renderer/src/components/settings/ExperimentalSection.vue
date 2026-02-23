@@ -1,38 +1,31 @@
 <template>
   <div class="section-body">
-    <SettingsField
-      v-for="field in experimentalFields"
+    <OmoField
+      v-for="field in schemaFields"
       :key="field.key"
-      :label="field.label"
-      type="checkbox"
-      :model-value="experimental[field.key] === true"
-      @update:model-value="$emit('updateNested', field.key, $event)"
-      :help="field.description"
+      :field="field"
+      :model-value="getValue(field.key)"
+      @update:model-value="emit('updateNested', field.key, $event)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import SettingsField from './SettingsField.vue'
-import type { ExperimentalConfig, ExperimentalField } from '../../types/settings.js'
+import OmoField from '../OmoField.vue'
+import type { ExperimentalConfig, OmoSchemaField } from '../../types/settings.js'
 
-defineProps<{
+const props = defineProps<{
   experimental: ExperimentalConfig
+  schemaFields: OmoSchemaField[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   updateNested: [key: string, value: unknown]
 }>()
 
-const { t } = useI18n()
-
-const experimentalFields = computed<ExperimentalField[]>(() => [
-  { key: 'disable_paste_summary', label: t('experimental.disablePasteSummary.label'), description: t('experimental.disablePasteSummary.help') },
-  { key: 'batch_tool', label: t('experimental.batchTool.label'), description: t('experimental.batchTool.help') },
-  { key: 'continue_loop_on_deny', label: t('experimental.continueLoopOnDeny.label'), description: t('experimental.continueLoopOnDeny.help') },
-])
+function getValue(key: string): unknown {
+  return (props.experimental as Record<string, unknown>)[key]
+}
 </script>
 
 <style scoped>

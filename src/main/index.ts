@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MessageChannelMain, Notification, Tray, ipcMain, nativeImage, shell, type MessagePortMain } from 'electron'
+import { app, BrowserWindow, Menu, MenuItemConstructorOptions, MessageChannelMain, Notification, Tray, ipcMain, nativeImage, shell, type MessagePortMain } from 'electron'
 import { RPCHandler } from '@orpc/server/message-port'
 import { onError } from '@orpc/server'
 import { router } from './rpc/router.js'
@@ -23,6 +23,7 @@ const handler = new RPCHandler(router, {
 })
 
 const activePorts = new Map<number, MessagePortMain>()
+const windows = new Set<BrowserWindow>()
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
@@ -97,7 +98,7 @@ function setupOrpcChannel(win: BrowserWindow) {
   win.webContents.postMessage('orpc-port', null, [port2])
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(isMain = false): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     minWidth: 1280,
@@ -113,13 +114,20 @@ function createWindow(): BrowserWindow {
     },
   })
 
+  // Track all windows
+  windows.add(win)
+
   win.on('close', (event) => {
     if (isQuitting) return
-    event.preventDefault()
-    win.hide()
+    // Only hide main window, destroy additional windows
+    if (isMain && mainWindow === win) {
+      event.preventDefault()
+      win.hide()
+    }
   })
 
-  win.webContents.on('destroyed', () => {
+  win.on('closed', () => {
+    windows.delete(win)
     const port = activePorts.get(win.webContents.id)
     if (port) {
       port.close()
@@ -144,7 +152,7 @@ function createWindow(): BrowserWindow {
 
 function showMainWindow(): void {
   if (!mainWindow || mainWindow.isDestroyed()) {
-    mainWindow = createWindow()
+    mainWindow = createWindow(true)
     attachCrashEvents(mainWindow)
     return
   }
@@ -154,6 +162,11 @@ function showMainWindow(): void {
   }
   mainWindow.show()
   mainWindow.focus()
+}
+
+function createNewWindow(): BrowserWindow {
+  const win = createWindow(false)
+  return win
 }
 
 function attachCrashEvents(win: BrowserWindow): void {
@@ -197,6 +210,67 @@ function setupTray(): void {
   })
 }
 
+function setupMenu(): void {
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Window',
+          accelerator: 'CmdOrCtrl+N',
+          click: () => {
+            createNewWindow()
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Close Window',
+          accelerator: 'CmdOrCtrl+W',
+          role: 'close',
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
+        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
+        { type: 'separator' },
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' },
+        { label: 'Select All', accelerator: 'CmdOrCtrl+A', role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { label: 'Reload', accelerator: 'CmdOrCtrl+R', role: 'reload' },
+        { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
+        { label: 'Toggle DevTools', accelerator: 'Alt+CmdOrCtrl+I', role: 'toggleDevTools' },
+        { type: 'separator' },
+        { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', role: 'resetZoom' },
+        { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus', role: 'zoomIn' },
+        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', role: 'zoomOut' },
+        { type: 'separator' },
+        { label: 'Toggle Full Screen', accelerator: 'Ctrl+CmdOrCtrl+F', role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { label: 'Minimize', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
+        { label: 'Zoom', role: 'zoom' },
+        { type: 'separator' },
+        { label: 'Bring All to Front', role: 'front' },
+      ],
+    },
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
+
 async function cleanupBeforeQuit(): Promise<void> {
   for (const port of activePorts.values()) {
     port.close()
@@ -237,7 +311,8 @@ app.whenReady().then(() => {
     version: app.getVersion(),
   })
 
-  mainWindow = createWindow()
+  mainWindow = createWindow(true)
+  setupMenu()
   setupTray()
   void applyWrapperStartupSettings()
   startUpdateNotifier()

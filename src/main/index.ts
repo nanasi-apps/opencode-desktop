@@ -171,11 +171,15 @@ function createNewWindow(): BrowserWindow {
 
 function attachCrashEvents(win: BrowserWindow): void {
   onProcessCrash(() => {
-    win.webContents.send('opencode-web-crashed')
+    if (!win.isDestroyed()) {
+      win.webContents.send('opencode-web-crashed')
+    }
   })
 
   onTunnelCrash(() => {
-    win.webContents.send('cloudflare-tunnel-crashed')
+    if (!win.isDestroyed()) {
+      win.webContents.send('cloudflare-tunnel-crashed')
+    }
     void startBackgroundTunnelIfEnabled()
   })
 }
@@ -272,6 +276,17 @@ function setupMenu(): void {
 }
 
 async function cleanupBeforeQuit(): Promise<void> {
+  isQuitting = true
+  
+  // Clean up all windows
+  for (const win of windows) {
+    if (!win.isDestroyed()) {
+      win.destroy()
+    }
+  }
+  windows.clear()
+  
+  // Clean up RPC ports
   for (const port of activePorts.values()) {
     port.close()
   }
